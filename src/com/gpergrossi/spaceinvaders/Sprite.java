@@ -1,4 +1,4 @@
-package org.newdawn.spaceinvaders;
+package com.gpergrossi.spaceinvaders;
 
 import java.awt.Graphics;
 import java.awt.Image;
