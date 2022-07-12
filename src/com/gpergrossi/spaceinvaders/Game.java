@@ -1,11 +1,9 @@
 package com.gpergrossi.spaceinvaders;
 
-import com.gpergrossi.spaceinvaders.entity.AlienEntity;
-import com.gpergrossi.spaceinvaders.entity.Entity;
-import com.gpergrossi.spaceinvaders.entity.ShipEntity;
-import com.gpergrossi.spaceinvaders.entity.ShotEntity;
+import com.gpergrossi.spaceinvaders.entity.*;
 
 import java.awt.*;
+import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 
 /**
@@ -28,6 +26,9 @@ public class Game extends Canvas {
 	/** The game window object allows us to ask the framerate and change display size */
 	private GameWindow gameWindow;
 
+	/** The settings object contains game settings and constants that define graphics and gameplay. */
+	private Settings gameSettings;
+
 	/** The input object through which this game can receive input and register listeners */
 	private Input input;
 
@@ -35,16 +36,16 @@ public class Game extends Canvas {
 	private boolean gameRunning;
 
 	/** The list of all the entities that exist in our game */
-	private ArrayList entities;
+	private ArrayList<Entity> entities;
 
 	/** The list of entities that need to be removed from the game this loop */
-	private ArrayList removeList;
+	private ArrayList<Entity> removeList;
 
 	/** The entity representing the player */
-	private Entity ship;
+	private ShipEntity ship;
 
 	/** The speed at which the player's ship should move (pixels/sec) */
-	private double moveSpeed;
+	private float moveSpeed;
 
 	/** The time at which last fired a shot */
 	private long lastFire;
@@ -53,13 +54,10 @@ public class Game extends Canvas {
 	private long firingInterval;
 
 	/** The number of aliens left on the screen */
-	private int alienCount;
+	private AlienSwarm alienSwarm;
 	
 	/** The message to display which waiting for a key press */
 	private String message;
-
-	/** True if game logic needs to be applied this loop, normally as a result of a game event */
-	private boolean logicRequiredThisLoop;
 
 	/** The font used for large text */
 	private Font largeFont;
@@ -70,8 +68,9 @@ public class Game extends Canvas {
 	/**
 	 * Construct our game and set it running.
 	 */
-	public Game(Input input) {
+	public Game(Input input, Settings settings) {
 		this.gameWindow = null; // Will be assigned by the GameWindow via setParent() when the game begins.
+		this.gameSettings = settings;
 		this.input = input;
 
 		this.entities = new ArrayList<>();
@@ -90,22 +89,25 @@ public class Game extends Canvas {
 		gameWindow = window;
 	}
 
+	public Settings getSettings() {
+		return gameSettings;
+	}
+
 	public void reset() {
-		// initialize game state variables
+		// Initialize game state variables
 		gameRunning = true;
 		moveSpeed = 300;
 		lastFire = 0;
 		firingInterval = 500;
-		alienCount = 0;
+		alienSwarm = new AlienSwarm();
 		message = "";
-		logicRequiredThisLoop = false;
 
-		// clear out any existing entities and initialize a new set
+		// Clear out any existing entities and initialize a new set
 		entities.clear();
 		removeList.clear();
 		initEntities();
 
-		// blank out any keyboard settings we might currently have
+		// Blank out any keyboard input we might currently have
 		input.reset();
 	}
 	
@@ -114,17 +116,22 @@ public class Game extends Canvas {
 	 * entity will be added to the overall list of entities in the game.
 	 */
 	private void initEntities() {
+
+		Sprite shipSprite = AssetStore.get().getSprite("sprites/ship.gif");
+		Sprite alienSprite = AssetStore.get().getSprite("sprites/alien.gif");
+
 		// create the player ship and place it roughly in the center of the screen
-		ship = new ShipEntity(this,"sprites/ship.gif",370,550);
+		ship = new ShipEntity(this, shipSprite, 370, 550);
 		entities.add(ship);
-		
-		// create a block of aliens (5 rows, by 12 aliens, spaced evenly)
-		alienCount = 0;
+
+		// Clear the alien swarm (in case there were some alive when the round ended)
+		alienSwarm.clear();
+
+		// Create a block of aliens (5 rows, by 12 aliens, spaced evenly)
 		for (int row = 0; row < 5; row++) {
 			for (int x = 0; x < 12; x++) {
-				Entity alien = new AlienEntity(this,"sprites/alien.gif",100+(x*50),(50)+row*30);
+				Entity alien = new AlienEntity(this, alienSwarm, alienSprite, 100+(x*50), (50)+row*30);
 				entities.add(alien);
-				alienCount++;
 			}
 		}
 	}
@@ -136,15 +143,6 @@ public class Game extends Canvas {
 		// The game is now ready, wait for a key press from the user before beginning.
 		Runnable callback = () -> { this.reset(); };
 		input.waitKey(callback);
-	}
-
-	/**
-	 * Notification from a game entity that the logic of the game
-	 * should be run at the next opportunity (normally as a result of some
-	 * game event)
-	 */
-	public void updateLogic() {
-		logicRequiredThisLoop = true;
 	}
 	
 	/**
@@ -181,24 +179,18 @@ public class Game extends Canvas {
 	/**
 	 * Notification that an alien has been killed
 	 */
-	public void notifyAlienKilled() {
-		// reduce the alient count, if there are none left, the player has won!
-		alienCount--;
-		
-		if (alienCount == 0) {
+	public void notifyAlienKilled(AlienEntity alien) {
+		// Remove the alien from the swarm
+		alienSwarm.removeAlien(alien);
+
+		// If there are none left, the player has won!
+		if (alienSwarm.count() == 0) {
 			notifyWin();
 		}
-		
-		// if there are still some aliens left then they all need to get faster, so
+
+		// If there are still some aliens left then they all need to get faster, so
 		// speed up all the existing aliens
-		for (int i = 0; i < entities.size(); i++) {
-			Entity entity = (Entity) entities.get(i);
-			
-			if (entity instanceof AlienEntity) {
-				// speed up by 2%
-				entity.setHorizontalMovement(entity.getHorizontalMovement() * 1.02);
-			}
-		}
+		alien.getSwarm().increaseSpeed(1.02f);
 	}
 	
 	/**
@@ -211,10 +203,12 @@ public class Game extends Canvas {
 		if (System.currentTimeMillis() - lastFire < firingInterval) {
 			return;
 		}
-		
+
+		Sprite shotSprite = AssetStore.get().getSprite("sprites/shot.gif");
+
 		// if we waited long enough, create the shot entity, and record the time.
 		lastFire = System.currentTimeMillis();
-		ShotEntity shot = new ShotEntity(this,"sprites/shot.gif",ship.getX()+10,ship.getY()-30);
+		ShotEntity shot = new ShotEntity(this, shotSprite, ship.getX()+10, ship.getY()-30);
 		entities.add(shot);
 	}
 
@@ -237,59 +231,68 @@ public class Game extends Canvas {
 	 */
 	public void update(long deltaMs) {
 
-		// cycle round asking each entity to move itself
+		// Update all entities
 		if (!input.isWaitingForKeyPress()) {
 			for (int i = 0; i < entities.size(); i++) {
 				Entity entity = (Entity) entities.get(i);
-				entity.move(deltaMs);
+				entity.updateLogic(deltaMs);
+				entity.updateAnimation(deltaMs);
 			}
 		}
 
-		// brute force collisions, compare every entity against
-		// every other entity. If any of them collide notify
-		// both entities that the collision has occured
-		for (int p = 0; p < entities.size(); p++) {
-			for (int s = p+1; s < entities.size(); s++) {
-				Entity me = (Entity) entities.get(p);
-				Entity him = (Entity) entities.get(s);
+		// Update the alien swarm
+		alienSwarm.update();
 
-				if (me.collidesWith(him)) {
-					me.collidedWith(him);
-					him.collidedWith(me);
-				}
-			}
-		}
+		// Do collision checks
+		doCollisions();
 
-		// remove any entity that has been marked for clear up
+		// Remove any entity that has been marked for clean up
 		entities.removeAll(removeList);
 		removeList.clear();
-
-		// if a game event has indicated that game logic should
-		// be resolved, cycle round every entity requesting that
-		// their personal logic should be considered.
-		if (logicRequiredThisLoop) {
-			for (int i = 0; i < entities.size(); i++) {
-				Entity entity = (Entity) entities.get(i);
-				entity.doLogic();
-			}
-
-			logicRequiredThisLoop = false;
-		}
 
 		// resolve the movement of the ship. First assume the ship
 		// isn't moving. If either cursor key is pressed then
 		// update the movement appropriately
-		ship.setHorizontalMovement(0);
+		ship.setVelocityX(0);
 
 		if (input.isLeftPressed() && !input.isRightPressed()) {
-			ship.setHorizontalMovement(-moveSpeed);
+			ship.setVelocityX(-moveSpeed);
 		} else if (input.isRightPressed() && !input.isLeftPressed()) {
-			ship.setHorizontalMovement(moveSpeed);
+			ship.setVelocityX(moveSpeed);
 		}
 
 		// if we're pressing fire, attempt to fire
 		if (input.isFirePressed()) {
 			tryToFire();
+		}
+	}
+
+	private void doCollisions() {
+		// brute force collisions, compare every entity against
+		// every other entity. If any of them collide notify
+		// both entities that the collision has occurred
+
+		Rectangle2D.Float boundsA = new Rectangle2D.Float();
+		Rectangle2D.Float boundsB = new Rectangle2D.Float();
+
+		for (int i = 0; i < entities.size(); i++) {
+			for (int j = i+1; j < entities.size(); j++) {
+				Entity entityA = (Entity) entities.get(i);
+				Entity entityB = (Entity) entities.get(j);
+
+				if ((entityA instanceof PhysicsEntity) && (entityB instanceof PhysicsEntity)) {
+					PhysicsEntity physicsA = (PhysicsEntity) entityA;
+					PhysicsEntity physicsB = (PhysicsEntity) entityB;
+
+					physicsA.getBounds(boundsA);
+					physicsB.getBounds(boundsB);
+
+					if (boundsA.intersects(boundsB)) {
+						physicsA.onCollision(physicsB);
+						physicsB.onCollision(physicsA);
+					}
+				}
+			}
 		}
 	}
 
@@ -304,7 +307,7 @@ public class Game extends Canvas {
 		// cycle round drawing all the entities we have in the game
 		for (int i = 0; i < entities.size(); i++) {
 			Entity entity = (Entity) entities.get(i);
-			entity.draw(g);
+			entity.render(g);
 		}
 
 		// if we're waiting for an "any key" press then draw the

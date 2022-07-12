@@ -7,7 +7,6 @@ import java.io.InputStream;
 import java.net.URL;
 import java.util.HashMap;
 
-import javax.imageio.IIOException;
 import javax.imageio.ImageIO;
 
 /**

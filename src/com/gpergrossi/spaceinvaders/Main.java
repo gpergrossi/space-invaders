@@ -11,7 +11,8 @@ public class Main {
      */
     public static void main(String argv[]) {
         Input i = new Input();
-        Game g = new Game(i);
+        Settings s = new Settings();
+        Game g = new Game(i, s);
 
         GameWindow w = new GameWindow("Space Invaders 101", 800, 600, g, i);
 

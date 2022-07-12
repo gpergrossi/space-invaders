@@ -1,152 +1,61 @@
 package com.gpergrossi.spaceinvaders.entity;
 
-import com.gpergrossi.spaceinvaders.Sprite;
-import com.gpergrossi.spaceinvaders.AssetStore;
+import com.gpergrossi.spaceinvaders.Game;
+import com.gpergrossi.spaceinvaders.render.Renderer;
 
-import java.awt.Graphics;
-import java.awt.Rectangle;
+import java.awt.*;
 
 /**
- * An entity represents any element that appears in the game. The
- * entity is responsible for resolving collisions and movement
- * based on a set of properties defined either by subclass or externally.
- * 
- * Note that doubles are used for positions. This may seem strange
- * given that pixels locations are integers. However, using double means
- * that an entity can move a partial pixel. It doesn't of course mean that
- * they will be display half way through a pixel but allows us not lose
- * accuracy as we move.
- * 
- * @author Kevin Glass
+ * An entity represents any element that appears in the game.
+ * The entity class serves as a base class for all entities
+ * and provides the following interface:
+ *   1. A protected Game object member that the entity can use to communicate with the game and other entities.
+ *   2. An updateLogic() method that is called each frame to allow the entity to process logic updates.
+ *   3. An updateAnimation() method that is called each frame to allow the entity to process visual updates.
+ *   4. A getRenderer() method that returns the renderer for this entity.
  */
 public abstract class Entity {
-	/** The current x location of this entity */ 
-	protected double x;
-	/** The current y location of this entity */
-	protected double y;
-	/** The sprite that represents this entity */
-	protected Sprite sprite;
-	/** The current speed of this entity horizontally (pixels/sec) */
-	protected double dx;
-	/** The current speed of this entity vertically (pixels/sec) */
-	protected double dy;
-	/** The rectangle used for this entity during collisions  resolution */
-	private Rectangle me = new Rectangle();
-	/** The rectangle used for other entities during collision resolution */
-	private Rectangle him = new Rectangle();
-	
+
+	/** The game in which this entity exists. Used mostly for sending events. */
+	protected Game game;
+
 	/**
-	 * Construct a entity based on a sprite image and a location.
-	 * 
-	 * @param ref The reference to the image to be displayed for this entity
- 	 * @param x The initial x location of this entity
-	 * @param y The initial y location of this entity
+	 * Construct a entity belonging to a specified Game object.
 	 */
-	public Entity(String ref,int x,int y) {
-		this.sprite = AssetStore.get().getSprite(ref);
-		this.x = x;
-		this.y = y;
-	}
-	
-	/**
-	 * Request that this entity move itself based on a certain ammount
-	 * of time passing.
-	 * 
-	 * @param delta The ammount of time that has passed in milliseconds
-	 */
-	public void move(long delta) {
-		// update the location of the entity based on move speeds
-		x += (delta * dx) / 1000;
-		y += (delta * dy) / 1000;
-	}
-	
-	/**
-	 * Set the horizontal speed of this entity
-	 * 
-	 * @param dx The horizontal speed of this entity (pixels/sec)
-	 */
-	public void setHorizontalMovement(double dx) {
-		this.dx = dx;
+	public Entity(Game game) {
+		this.game = game;
 	}
 
 	/**
-	 * Set the vertical speed of this entity
-	 * 
-	 * @param dx The vertical speed of this entity (pixels/sec)
+	 * Process any logical updates associated with this entity.
+	 * This method will not be called while the game is paused.
+	 *
+	 * @param delta The amount of time that has passed in milliseconds
 	 */
-	public void setVerticalMovement(double dy) {
-		this.dy = dy;
-	}
-	
-	/**
-	 * Get the horizontal speed of this entity
-	 * 
-	 * @return The horizontal speed of this entity (pixels/sec)
-	 */
-	public double getHorizontalMovement() {
-		return dx;
-	}
+	public abstract void updateLogic(long delta);
 
 	/**
-	 * Get the vertical speed of this entity
-	 * 
-	 * @return The vertical speed of this entity (pixels/sec)
+	 * Process any updates associated with this entity's visual animation only.
+	 * This method is called even when the game is paused.
+	 *
+	 * @param delta The amount of time that has passed in milliseconds
 	 */
-	public double getVerticalMovement() {
-		return dy;
-	}
-	
-	/**
-	 * Draw this entity to the graphics context provided
-	 * 
-	 * @param g The graphics context on which to draw
-	 */
-	public void draw(Graphics g) {
-		sprite.draw(g,(int) x,(int) y);
-	}
-	
-	/**
-	 * Do the logic associated with this entity. This method
-	 * will be called periodically based on game events
-	 */
-	public void doLogic() {
-	}
-	
-	/**
-	 * Get the x location of this entity
-	 * 
-	 * @return The x location of this entity
-	 */
-	public int getX() {
-		return (int) x;
-	}
+	public abstract void updateAnimation(long delta);
 
 	/**
-	 * Get the y location of this entity
-	 * 
-	 * @return The y location of this entity
+	 * Get the renderer that can render this entity.
+	 * @return The renderer associated with this entity.
 	 */
-	public int getY() {
-		return (int) y;
-	}
-	
-	/**
-	 * Check if this entity collised with another.
-	 * 
-	 * @param other The other entity to check collision against
-	 * @return True if the entities collide with each other
-	 */
-	public boolean collidesWith(Entity other) {
-		me.setBounds((int) x,(int) y,sprite.getWidth(),sprite.getHeight());
-		him.setBounds((int) other.x,(int) other.y,other.sprite.getWidth(),other.sprite.getHeight());
+	public abstract Renderer getRenderer();
 
-		return me.intersects(him);
-	}
-	
 	/**
-	 * Notification that this entity collided with another.
-	 * 
-	 * @param other The entity with which this entity collided.
+	 * A render method that handles all rendering of all entities via the
+	 * Renderer object returned by their getRenderer() method.
+	 *
+	 * @param g A Graphics2D object.
 	 */
-	public abstract void collidedWith(Entity other);
+	public final void render(Graphics2D g) {
+		this.getRenderer().render(g, this);
+	}
+
 }

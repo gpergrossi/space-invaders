@@ -1,6 +1,8 @@
 package com.gpergrossi.spaceinvaders.entity;
 
 import com.gpergrossi.spaceinvaders.Game;
+import com.gpergrossi.spaceinvaders.Settings;
+import com.gpergrossi.spaceinvaders.Sprite;
 import com.gpergrossi.spaceinvaders.entity.Entity;
 
 /**
@@ -8,70 +10,102 @@ import com.gpergrossi.spaceinvaders.entity.Entity;
  * 
  * @author Kevin Glass
  */
-public class AlienEntity extends Entity {
-	/** The speed at which the alient moves horizontally */
-	private double moveSpeed = 75;
-	/** The game in which the entity exists */
-	private Game game;
+public class AlienEntity extends SpriteEntity {
+
+	/** The speed at which the alien moves horizontally */
+	private float moveSpeed = 75;
+
+	/** The swarm to which the entity belongs */
+	private AlienSwarm swarm;
+
+	/**
+	 * Construct an entity based on a sprite image and a location.
+	 *
+	 * @param game   The game to which this entity belongs.
+	 * @param swarm  The alien swarm to which this alien belongs.
+	 * @param sprite The sprite used to render this entity (and determine its size).
+	 * @param x      The initial x location of this entity.
+	 * @param y      The initial y location of this entity.
+	 */
+	public AlienEntity(Game game, AlienSwarm swarm, Sprite sprite, float x, float y) {
+		super(game, sprite, x, y);
+
+		this.dx = -moveSpeed;
+
+		this.swarm = swarm;
+		swarm.addAlien(this);
+	}
+
+	/**
+	 * @return The AlienSwarm object to which this AlienEntity belongs.
+	 */
+	public AlienSwarm getSwarm() {
+		return swarm;
+	}
 	
 	/**
-	 * Create a new alien entity
-	 * 
-	 * @param game The game in which this entity is being created
-	 * @param ref The sprite which should be displayed for this alien
-	 * @param x The intial x location of this alien
-	 * @param y The intial y location of this alient
+	 * Flips this alien's movement direction and drops it down by 10.
 	 */
-	public AlienEntity(Game game,String ref,int x,int y) {
-		super(ref,x,y);
-		
-		this.game = game;
-		dx = -moveSpeed;
+	public void changeDirection() {
+
+		Settings settings = game.getSettings();
+		int deathZoneMaxY = settings.getScreenHeight() - settings.getDeathZoneHeight() - (int) this.getHeight();
+
+		// swap over horizontal movement and move down the screen a bit
+		dx = -dx;
+		y += settings.getAlienDropIncrement();
+
+		// if we've reached the bottom of the screen then the player dies
+		if (y > deathZoneMaxY) {
+			game.notifyDeath();
+		}
 	}
 
 	/**
 	 * Request that this alien moved based on time elapsed
-	 * 
+	 *
 	 * @param delta The time that has elapsed since last move
 	 */
-	public void move(long delta) {
+	@Override
+	public void updateLogic(long delta) {
+		// Move the ship using the super class implementation
+		super.updateLogic(delta);
+
+		Settings settings = game.getSettings();
+		int edgeLeft = settings.getAlienBehaviorEdgeWidth();
+		int edgeRight = settings.getScreenWidth() - settings.getAlienBehaviorEdgeWidth() - (int) this.getWidth();
+
 		// if we have reached the left hand side of the screen and
-		// are moving left then request a logic update 
-		if ((dx < 0) && (x < 10)) {
-			game.updateLogic();
+		// are moving left then request a logic update
+		if ((dx < 0) && (x < edgeLeft)) {
+			swarm.requestChangeDirection();
 		}
-		// and vice vesa, if we have reached the right hand side of 
+
+		// and vice vesa, if we have reached the right hand side of
 		// the screen and are moving right, request a logic update
-		if ((dx > 0) && (x > 750)) {
-			game.updateLogic();
+		if ((dx > 0) && (x > edgeRight)) {
+			swarm.requestChangeDirection();
 		}
-		
-		// proceed with normal move
-		super.move(delta);
 	}
-	
+
 	/**
-	 * Update the game logic related to aliens
+	 * Do the logic associated with updating this entity.
+	 * This method will be called once per frame.
+	 *
+	 * @param delta The amount of time that has passed in milliseconds
 	 */
-	public void doLogic() {
-		// swap over horizontal movement and move down the
-		// screen a bit
-		dx = -dx;
-		y += 10;
-		
-		// if we've reached the bottom of the screen then the player
-		// dies
-		if (y > 570) {
-			game.notifyDeath();
-		}
+	@Override
+	public void updateAnimation(long delta) {
+		// Physics entities will process no animation updates by default.
 	}
-	
+
 	/**
 	 * Notification that this alien has collided with another entity
-	 * 
+	 *
 	 * @param other The other entity
 	 */
-	public void collidedWith(Entity other) {
+	@Override
+	public void onCollision(Entity other) {
 		// collisions with aliens are handled elsewhere
 	}
 }
