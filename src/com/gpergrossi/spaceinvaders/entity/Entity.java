@@ -1,7 +1,7 @@
 package com.gpergrossi.spaceinvaders.entity;
 
 import com.gpergrossi.spaceinvaders.Sprite;
-import com.gpergrossi.spaceinvaders.SpriteStore;
+import com.gpergrossi.spaceinvaders.AssetStore;
 
 import java.awt.Graphics;
 import java.awt.Rectangle;
@@ -43,7 +43,7 @@ public abstract class Entity {
 	 * @param y The initial y location of this entity
 	 */
 	public Entity(String ref,int x,int y) {
-		this.sprite = SpriteStore.get().getSprite(ref);
+		this.sprite = AssetStore.get().getSprite(ref);
 		this.x = x;
 		this.y = y;
 	}
