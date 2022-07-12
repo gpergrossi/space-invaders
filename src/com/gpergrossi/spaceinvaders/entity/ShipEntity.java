@@ -13,8 +13,6 @@ import java.awt.*;
  * @author Kevin Glass
  */
 public class ShipEntity extends SpriteEntity {
-	/** The game in which the ship exists */
-	private Game game;
 
 	private TintedSprite shipSprite;
 
@@ -86,6 +84,7 @@ public class ShipEntity extends SpriteEntity {
 	 * 
 	 * @param other The entity with which the ship has collided
 	 */
+	@Override
 	public void onCollision(Entity other) {
 		// If its an alien, notify the game that the player is dead
 		if (other instanceof AlienEntity) {

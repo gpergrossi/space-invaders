@@ -44,6 +44,7 @@ public class ShotEntity extends SpriteEntity {
 		// If we shot is off the screen, remove it
 		if (y < -100) {
 			game.removeEntity(this);
+			game.notifyShotMissed(this);
 		}
 	}
 

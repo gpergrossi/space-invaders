@@ -35,9 +35,6 @@ public class Game extends Canvas {
 	/** The input object through which this game can receive input and register listeners */
 	private Input input;
 
-	/** True if the game is currently "running", i.e. the game loop is looping */
-	private boolean gameRunning;
-
 	/** The list of all the entities that exist in our game */
 	private ArrayList<Entity> entities;
 
@@ -75,7 +72,6 @@ public class Game extends Canvas {
 		this.gameWindow = null; // Will be assigned by the GameWindow via setParent() when the game begins.
 		this.gameSettings = settings;
 		this.input = input;
-		this.gameRunning = true;
 
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
@@ -164,7 +160,21 @@ public class Game extends Canvas {
 	public void removeEntity(Entity entity) {
 		removeList.add(entity);
 	}
-	
+
+	/**
+	 * Notification that the player has fired a shot.
+	 */
+	public void notifyPlayerShoot() {
+		// Nothing to do yet
+	}
+
+	/**
+	 * Notification that a shot fired by the player has missed and gone off the top of the screen.
+	 */
+	public void notifyShotMissed(ShotEntity shot) {
+		// Nothing to do yet
+	}
+
 	/**
 	 * Notification that the player has died. 
 	 */
@@ -215,19 +225,14 @@ public class Game extends Canvas {
 		if (ship.canShoot()) {
 			Sprite shotSprite = AssetStore.get().getSprite("sprites/shot.gif");
 
-			// if we waited long enough, create the shot entity, and record the time.
+			// If we waited long enough, create the shot entity, and record the time.
 			ShotEntity shot = new ShotEntity(this, shotSprite, ship.getX()+10, ship.getY()-30);
 			entities.add(shot);
 
 			ship.resetShotTimer();
-		}
-	}
 
-	/**
-	 * @return true if the game is still running, false if it is not and the window should be closed.
-	 */
-	public boolean isRunning() {
-		return gameRunning;
+			notifyPlayerShoot();
+		}
 	}
 
 	/**

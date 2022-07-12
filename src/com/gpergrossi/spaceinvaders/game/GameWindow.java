@@ -22,6 +22,9 @@ public class GameWindow extends Canvas {
     /** Height of the display area */
     private int height;
 
+    /** True if the game is open and should still be running, false if not and the window should close. */
+    private boolean running;
+
     /** The game object that handles the core game loop and behaviors */
     private Game game;
 
@@ -107,7 +110,8 @@ public class GameWindow extends Canvas {
         // Main game loop
         game.init();
 
-        while (game.isRunning()) {
+        this.running = true;
+        while (running) {
 
             // work out how long its been since the last update, this
             // will be used to calculate how far the entities should
@@ -163,6 +167,10 @@ public class GameWindow extends Canvas {
                 }
             }
         }
+    }
+
+    public void close() {
+        this.running = false;
     }
 
     public double getAverageFrameRate() {

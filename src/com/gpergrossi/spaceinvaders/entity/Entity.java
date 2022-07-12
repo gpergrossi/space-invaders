@@ -23,6 +23,7 @@ public abstract class Entity {
 	 * Construct a entity belonging to a specified Game object.
 	 */
 	public Entity(Game game) {
+		if (game == null) throw new IllegalArgumentException("Game must be defined!");
 		this.game = game;
 	}
 
