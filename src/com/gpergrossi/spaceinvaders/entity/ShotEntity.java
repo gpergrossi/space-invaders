@@ -1,4 +1,8 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.entity;
+
+import com.gpergrossi.spaceinvaders.Game;
+import com.gpergrossi.spaceinvaders.entity.AlienEntity;
+import com.gpergrossi.spaceinvaders.entity.Entity;
 
 /**
  * An entity representing a shot fired by the player's ship

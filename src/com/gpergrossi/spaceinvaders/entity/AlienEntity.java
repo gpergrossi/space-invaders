@@ -1,4 +1,7 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.entity;
+
+import com.gpergrossi.spaceinvaders.Game;
+import com.gpergrossi.spaceinvaders.entity.Entity;
 
 /**
  * An entity which represents one of our space invader aliens.

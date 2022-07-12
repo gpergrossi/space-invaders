@@ -69,7 +69,15 @@ public class Input {
         waitingForKeyPress = true;
     }
 
-    /** Tells the input system to ignore all input until a key is typed. */
+    /**
+     * Tells the input system to ignore all input until a key is typed.
+     *
+     * Please note that if we are already waiting for a key press, the
+     * original callback function will be overwritten and never called.
+     *
+     * @param callback A callback function that will be called when the
+     *                 user finally does press a key.
+     */
     public void waitKey(Runnable callback) {
         reset();
         waitingForKeyPress = true;

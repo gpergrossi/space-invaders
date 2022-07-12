@@ -1,4 +1,7 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.entity;
+
+import com.gpergrossi.spaceinvaders.Sprite;
+import com.gpergrossi.spaceinvaders.SpriteStore;
 
 import java.awt.Graphics;
 import java.awt.Rectangle;

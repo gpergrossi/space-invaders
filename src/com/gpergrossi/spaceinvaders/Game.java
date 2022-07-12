@@ -1,15 +1,12 @@
 package com.gpergrossi.spaceinvaders;
 
-import java.awt.*;
-import java.awt.event.KeyAdapter;
-import java.awt.event.KeyEvent;
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
-import java.awt.image.BufferStrategy;
-import java.util.ArrayList;
+import com.gpergrossi.spaceinvaders.entity.AlienEntity;
+import com.gpergrossi.spaceinvaders.entity.Entity;
+import com.gpergrossi.spaceinvaders.entity.ShipEntity;
+import com.gpergrossi.spaceinvaders.entity.ShotEntity;
 
-import javax.swing.JFrame;
-import javax.swing.JPanel;
+import java.awt.*;
+import java.util.ArrayList;
 
 /**
  * The main hook of our game. This class with both act as a manager
