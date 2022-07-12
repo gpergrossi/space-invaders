@@ -61,6 +61,12 @@ public class Game extends Canvas {
 	/** True if game logic needs to be applied this loop, normally as a result of a game event */
 	private boolean logicRequiredThisLoop;
 
+	/** The font used for large text */
+	private Font largeFont;
+
+	 /** The font used for small text */
+	private Font smallFont;
+
 	/**
 	 * Construct our game and set it running.
 	 */
@@ -71,6 +77,10 @@ public class Game extends Canvas {
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
 		this.reset();
+
+		// These will be initialized in the init() method
+		this.largeFont = null;
+		this.smallFont = null;
 
 		// initialise the entities in our game so there's something to see at startup.
 		initEntities();
@@ -120,6 +130,9 @@ public class Game extends Canvas {
 	}
 
 	public void init() {
+		largeFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 24.0f);
+		smallFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 18.0f);
+
 		// The game is now ready, wait for a key press from the user before beginning.
 		Runnable callback = () -> { this.reset(); };
 		input.waitKey(callback);
@@ -291,13 +304,13 @@ public class Game extends Canvas {
 		// cycle round drawing all the entities we have in the game
 		for (int i = 0; i < entities.size(); i++) {
 			Entity entity = (Entity) entities.get(i);
-
 			entity.draw(g);
 		}
 
 		// if we're waiting for an "any key" press then draw the
 		// current message
 		if (input.isWaitingForKeyPress()) {
+			g.setFont(largeFont);
 			g.setColor(Color.white);
 			g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
 			g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
@@ -306,8 +319,9 @@ public class Game extends Canvas {
 		// Render FPS counter
 		if (gameWindow != null) {
 			int fps = (int) (gameWindow.getAverageFrameRate());
+			g.setFont(smallFont);
 			g.setColor(Color.white);
-			g.drawString("FPS: " + fps, 700, 20);
+			g.drawString("FPS: " + fps, 730, 20);
 		}
 	}
 

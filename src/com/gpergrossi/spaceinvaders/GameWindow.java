@@ -114,6 +114,7 @@ public class GameWindow extends Canvas {
             // move this loop
             long deltaMs = targetFrameTimeMs; //System.currentTimeMillis() - lastLoopTimeMs;
 
+            // Record the starting time for this loop
             lastLoopTimeMs = System.currentTimeMillis();
             lastLoopTimeNs = System.nanoTime();
 
@@ -129,17 +130,20 @@ public class GameWindow extends Canvas {
             // Update the game state
             game.update(deltaMs);
 
-            // Get hold of a graphics context for the accelerated
-            // surface and blank it out
+            // Get hold of a graphics context for the accelerated surface
             Graphics2D g = (Graphics2D) strategy.getDrawGraphics();
+
+            // Tell the graphics system to draw with anti-aliasing (for smooth font rendering)
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+
+            // Clear the screen
             g.setColor(Color.black);
             g.fillRect(0, 0, width, height);
 
+            // Render the game
             game.render(g);
 
-            // finally, we've completed drawing so clear up the graphics
-            // and flip the buffer over
+            // Finally, we've completed drawing so clear up the graphics and flip the buffer over
             g.dispose();
             strategy.show();
 
@@ -149,9 +153,13 @@ public class GameWindow extends Canvas {
                 long frameTimeNs = (System.nanoTime() - lastLoopTimeNs);
 
                 if (frameTimeNs >= targetFrameTimeNs) {
+                    // Time is up, break out of the waiting loop
                     break;
-                } else if (frameTimeNs - targetFrameTimeNs > MINIMUM_YIELD_TIME_NS) {
+                } else if ((frameTimeNs - targetFrameTimeNs) > MINIMUM_YIELD_TIME_NS) {
+                    // We have a enough time to yield the thread
                     Thread.yield();
+                } else {
+                    // Busy waiting
                 }
             }
         }
