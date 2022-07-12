@@ -56,12 +56,6 @@ public class Game extends Canvas {
 	/** The speed at which the player's ship should move (pixels/sec) */
 	private float moveSpeed;
 
-	/** The time at which last fired a shot */
-	private long lastFire;
-
-	/** The interval between our players shot (ms) */
-	private long firingInterval;
-
 	/** The number of aliens left on the screen */
 	private AlienSwarm alienSwarm;
 	
@@ -125,8 +119,6 @@ public class Game extends Canvas {
 	public void reset() {
 		// Initialize game state variables
 		moveSpeed = 300;
-		lastFire = 0;
-		firingInterval = 500;
 		alienSwarm.clear();
 		message = "";
 
@@ -219,17 +211,16 @@ public class Game extends Canvas {
 	 * point, i.e. has he/she waited long enough between shots
 	 */
 	public void tryToFire() {
-		// check that we have waiting long enough to fire
-		if (System.currentTimeMillis() - lastFire < firingInterval) {
-			return;
+		// Check that we been have waiting long enough to fire
+		if (ship.canShoot()) {
+			Sprite shotSprite = AssetStore.get().getSprite("sprites/shot.gif");
+
+			// if we waited long enough, create the shot entity, and record the time.
+			ShotEntity shot = new ShotEntity(this, shotSprite, ship.getX()+10, ship.getY()-30);
+			entities.add(shot);
+
+			ship.resetShotTimer();
 		}
-
-		Sprite shotSprite = AssetStore.get().getSprite("sprites/shot.gif");
-
-		// if we waited long enough, create the shot entity, and record the time.
-		lastFire = System.currentTimeMillis();
-		ShotEntity shot = new ShotEntity(this, shotSprite, ship.getX()+10, ship.getY()-30);
-		entities.add(shot);
 	}
 
 	/**

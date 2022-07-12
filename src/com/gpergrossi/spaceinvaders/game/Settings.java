@@ -9,6 +9,8 @@ public class Settings {
     private int deathZoneHeight = 10;
     private int alienDropIncrement = 10;
 
+    private int playerReloadTime = 500; // Half a second
+
 
 
     public int getScreenWidth() {
@@ -30,4 +32,6 @@ public class Settings {
     public int getAlienDropIncrement() {
         return alienDropIncrement;
     }
+
+    public int getPlayerReloadTime() { return playerReloadTime; }
 }

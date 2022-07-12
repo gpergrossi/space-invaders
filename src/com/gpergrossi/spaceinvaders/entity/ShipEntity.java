@@ -1,7 +1,11 @@
 package com.gpergrossi.spaceinvaders.entity;
 
+import com.gpergrossi.spaceinvaders.assets.TintedSprite;
 import com.gpergrossi.spaceinvaders.game.Game;
 import com.gpergrossi.spaceinvaders.assets.Sprite;
+import com.gpergrossi.spaceinvaders.game.Settings;
+
+import java.awt.*;
 
 /**
  * The entity that represents the players ship
@@ -11,7 +15,12 @@ import com.gpergrossi.spaceinvaders.assets.Sprite;
 public class ShipEntity extends SpriteEntity {
 	/** The game in which the ship exists */
 	private Game game;
-	
+
+	private TintedSprite shipSprite;
+
+	private int reloadTime;
+	private int reloadProgress;
+
 	/**
 	 * Create a new entity to represent the players ship
 	 *
@@ -20,14 +29,21 @@ public class ShipEntity extends SpriteEntity {
 	 * @param x      The initial x location of this entity.
 	 * @param y      The initial y location of this entity.
 	 */
-	public ShipEntity(Game game, Sprite sprite, float x, float y) {
+	public ShipEntity(Game game, TintedSprite sprite, float x, float y) {
 		super(game, sprite, x, y);
+
+		this.shipSprite = sprite;
+
+		Settings settings = game.getSettings();
+		reloadTime = settings.getPlayerReloadTime();
+		reloadProgress = reloadTime;
 	}
-	
+
 	/**
-	 * Request that the ship move itself based on an elapsed amount of time
-	 * 
-	 * @param delta The time that has elapsed since last move (ms)
+	 * Process any logical updates associated with this entity.
+	 * This method will not be called while the game is paused.
+	 *
+	 * @param delta The amount of time that has passed in milliseconds
 	 */
 	@Override
 	public void updateLogic(long delta) {
@@ -45,17 +61,24 @@ public class ShipEntity extends SpriteEntity {
 			return;
 		}
 
+		reloadProgress += delta;
+		if (reloadProgress > reloadTime) {
+			reloadProgress = reloadTime;
+		}
 	}
 
 	/**
-	 * Do the logic associated with updating this entity.
-	 * This method will be called once per frame.
+	 * Process any updates associated with this entity's visual animation only.
+	 * This method is called even when the game is paused.
 	 *
 	 * @param delta The amount of time that has passed in milliseconds
 	 */
 	@Override
 	public void updateAnimation(long delta) {
-		// Physics entities will process no animation updates by default.
+		float reloadPercent = (float) reloadProgress / reloadTime;
+
+		int charge = (int) (255 * reloadPercent);
+		shipSprite.setColor(new Color(255, charge, charge));
 	}
 
 	/**
@@ -68,5 +91,13 @@ public class ShipEntity extends SpriteEntity {
 		if (other instanceof AlienEntity) {
 			game.notifyDeath();
 		}
+	}
+
+	public boolean canShoot() {
+		return (reloadProgress == reloadTime);
+	}
+
+	public void resetShotTimer() {
+		reloadProgress = 0;
 	}
 }

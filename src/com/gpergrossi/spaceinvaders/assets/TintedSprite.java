@@ -17,7 +17,7 @@ public class TintedSprite extends Sprite {
         this.setColor(color);
     }
 
-    private void setColor(Color color) {
+    public void setColor(Color color) {
         // If no change, don't do anything
         if (this.color != null && this.color.equals(color)) return;
 
