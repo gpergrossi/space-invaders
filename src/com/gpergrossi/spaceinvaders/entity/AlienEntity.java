@@ -1,9 +1,8 @@
 package com.gpergrossi.spaceinvaders.entity;
 
-import com.gpergrossi.spaceinvaders.Game;
-import com.gpergrossi.spaceinvaders.Settings;
-import com.gpergrossi.spaceinvaders.Sprite;
-import com.gpergrossi.spaceinvaders.entity.Entity;
+import com.gpergrossi.spaceinvaders.game.Game;
+import com.gpergrossi.spaceinvaders.game.Settings;
+import com.gpergrossi.spaceinvaders.assets.Sprite;
 
 /**
  * An entity which represents one of our space invader aliens.

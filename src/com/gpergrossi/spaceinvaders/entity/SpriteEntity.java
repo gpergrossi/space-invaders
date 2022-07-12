@@ -1,11 +1,9 @@
 package com.gpergrossi.spaceinvaders.entity;
 
-import com.gpergrossi.spaceinvaders.Game;
-import com.gpergrossi.spaceinvaders.Sprite;
+import com.gpergrossi.spaceinvaders.game.Game;
+import com.gpergrossi.spaceinvaders.assets.Sprite;
 import com.gpergrossi.spaceinvaders.render.Renderer;
 import com.gpergrossi.spaceinvaders.render.SpriteEntityRenderer;
-
-import java.awt.*;
 
 public abstract class SpriteEntity extends PhysicsEntity {
 

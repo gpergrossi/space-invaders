@@ -1,5 +1,8 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.game;
 
+import com.gpergrossi.spaceinvaders.assets.AssetStore;
+import com.gpergrossi.spaceinvaders.assets.Sprite;
+import com.gpergrossi.spaceinvaders.assets.TintedSprite;
 import com.gpergrossi.spaceinvaders.entity.*;
 
 import java.awt.*;
@@ -41,6 +44,12 @@ public class Game extends Canvas {
 	/** The list of entities that need to be removed from the game this loop */
 	private ArrayList<Entity> removeList;
 
+	/** The sprite used for rendering the player's ship */
+	private TintedSprite shipSprite;
+
+	/** The sprite used for rendering the enemies */
+	private Sprite alienSprite;
+
 	/** The entity representing the player */
 	private ShipEntity ship;
 
@@ -72,17 +81,16 @@ public class Game extends Canvas {
 		this.gameWindow = null; // Will be assigned by the GameWindow via setParent() when the game begins.
 		this.gameSettings = settings;
 		this.input = input;
+		this.gameRunning = true;
 
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
-		this.reset();
+
+		alienSwarm = new AlienSwarm();
 
 		// These will be initialized in the init() method
 		this.largeFont = null;
 		this.smallFont = null;
-
-		// initialise the entities in our game so there's something to see at startup.
-		initEntities();
 	}
 
 	public void setParent(GameWindow window) {
@@ -93,22 +101,44 @@ public class Game extends Canvas {
 		return gameSettings;
 	}
 
+
+	public void init() {
+		// Load fonts
+		largeFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 24.0f);
+		smallFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 18.0f);
+
+		// Load ship sprite
+		Sprite shipBaseSprite = AssetStore.get().getSprite("sprites/ship.png");
+		Sprite shipMaskSprite = AssetStore.get().getSprite("sprites/ship-mask.png");
+		shipSprite = new TintedSprite(shipBaseSprite, shipMaskSprite, Color.RED);
+
+		// Load alien sprite
+		alienSprite = AssetStore.get().getSprite("sprites/alien.gif");
+
+		// Start the game in a paused state
+		this.reset();
+
+		// The game is now ready, wait for a key press from the user before beginning.
+		input.waitKey();
+	}
+
 	public void reset() {
 		// Initialize game state variables
-		gameRunning = true;
 		moveSpeed = 300;
 		lastFire = 0;
 		firingInterval = 500;
-		alienSwarm = new AlienSwarm();
+		alienSwarm.clear();
 		message = "";
+
+		// Blank out any keyboard input we might currently have
+		input.reset();
 
 		// Clear out any existing entities and initialize a new set
 		entities.clear();
 		removeList.clear();
-		initEntities();
 
-		// Blank out any keyboard input we might currently have
-		input.reset();
+		// Create entities
+		initEntities();
 	}
 	
 	/**
@@ -116,10 +146,6 @@ public class Game extends Canvas {
 	 * entity will be added to the overall list of entities in the game.
 	 */
 	private void initEntities() {
-
-		Sprite shipSprite = AssetStore.get().getSprite("sprites/ship.gif");
-		Sprite alienSprite = AssetStore.get().getSprite("sprites/alien.gif");
-
 		// create the player ship and place it roughly in the center of the screen
 		ship = new ShipEntity(this, shipSprite, 370, 550);
 		entities.add(ship);
@@ -134,15 +160,7 @@ public class Game extends Canvas {
 				entities.add(alien);
 			}
 		}
-	}
-
-	public void init() {
-		largeFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 24.0f);
-		smallFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 18.0f);
-
-		// The game is now ready, wait for a key press from the user before beginning.
-		Runnable callback = () -> { this.reset(); };
-		input.waitKey(callback);
+		System.out.println("Aliens to start: " + alienSwarm.count());
 	}
 	
 	/**
@@ -182,6 +200,8 @@ public class Game extends Canvas {
 	public void notifyAlienKilled(AlienEntity alien) {
 		// Remove the alien from the swarm
 		alienSwarm.removeAlien(alien);
+
+		System.out.println("Alien killed: " + alienSwarm.count());
 
 		// If there are none left, the player has won!
 		if (alienSwarm.count() == 0) {

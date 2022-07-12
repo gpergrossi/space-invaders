@@ -1,4 +1,4 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.assets;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
@@ -72,10 +72,12 @@ public class AssetStore {
 
 		// Create an accelerated image of the right size to store our sprite in.
 		GraphicsConfiguration gc = GraphicsEnvironment.getLocalGraphicsEnvironment().getDefaultScreenDevice().getDefaultConfiguration();
-		Image image = gc.createCompatibleImage(sourceImage.getWidth(), sourceImage.getHeight(), Transparency.BITMASK);
+		BufferedImage image = gc.createCompatibleImage(sourceImage.getWidth(), sourceImage.getHeight(), Transparency.TRANSLUCENT);
 
-		// Draw our source image into the accelerated image.
-		image.getGraphics().drawImage(sourceImage,0,0,null);
+		// Copy pixels from source to accelerated image
+		int[] argb = new int[image.getWidth() * image.getHeight()];
+		argb = sourceImage.getRGB(0, 0, image.getWidth(), image.getHeight(), argb, 0, image.getWidth());
+		image.setRGB(0, 0, image.getWidth(), image.getHeight(), argb, 0, image.getWidth());
 
 		// Create a sprite, add it the cache then return it.
 		Sprite sprite = new Sprite(image);

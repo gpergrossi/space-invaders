@@ -1,7 +1,7 @@
 package com.gpergrossi.spaceinvaders.entity;
 
-import com.gpergrossi.spaceinvaders.Game;
-import com.gpergrossi.spaceinvaders.Sprite;
+import com.gpergrossi.spaceinvaders.game.Game;
+import com.gpergrossi.spaceinvaders.assets.Sprite;
 
 /**
  * The entity that represents the players ship

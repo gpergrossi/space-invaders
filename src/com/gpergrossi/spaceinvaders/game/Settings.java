@@ -1,4 +1,4 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.game;
 
 public class Settings {
 

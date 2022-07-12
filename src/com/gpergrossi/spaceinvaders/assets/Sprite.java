@@ -1,6 +1,7 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.assets;
 
 import java.awt.*;
+import java.awt.image.BufferedImage;
 
 /**
  * A sprite to be displayed on the screen. Note that a sprite
@@ -13,14 +14,14 @@ import java.awt.*;
  */
 public class Sprite {
 	/** The image to be drawn for this sprite */
-	private Image image;
+	protected BufferedImage image;
 	
 	/**
 	 * Create a new sprite based on an image
 	 * 
 	 * @param image The image that is this sprite
 	 */
-	public Sprite(Image image) {
+	public Sprite(BufferedImage image) {
 		this.image = image;
 	}
 	

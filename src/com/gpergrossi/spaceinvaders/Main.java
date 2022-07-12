@@ -1,5 +1,10 @@
 package com.gpergrossi.spaceinvaders;
 
+import com.gpergrossi.spaceinvaders.game.Game;
+import com.gpergrossi.spaceinvaders.game.GameWindow;
+import com.gpergrossi.spaceinvaders.game.Input;
+import com.gpergrossi.spaceinvaders.game.Settings;
+
 public class Main {
 
     /**

@@ -1,6 +1,6 @@
 package com.gpergrossi.spaceinvaders.entity;
 
-import com.gpergrossi.spaceinvaders.Game;
+import com.gpergrossi.spaceinvaders.game.Game;
 
 import java.awt.geom.Rectangle2D;
 

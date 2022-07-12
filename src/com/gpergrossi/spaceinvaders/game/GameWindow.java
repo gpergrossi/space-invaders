@@ -1,4 +1,4 @@
-package com.gpergrossi.spaceinvaders;
+package com.gpergrossi.spaceinvaders.game;
 
 import javax.swing.*;
 import java.awt.*;
