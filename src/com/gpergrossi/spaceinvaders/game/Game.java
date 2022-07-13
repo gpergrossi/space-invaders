@@ -1,5 +1,7 @@
 package com.gpergrossi.spaceinvaders.game;
 
+import com.gpergrossi.spaceinvaders.animation.AnimatedText;
+import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
 import com.gpergrossi.spaceinvaders.assets.AssetStore;
 import com.gpergrossi.spaceinvaders.assets.Sprite;
 import com.gpergrossi.spaceinvaders.assets.TintedSprite;
@@ -32,8 +34,14 @@ public class Game extends Canvas {
 	/** The settings object contains game settings and constants that define graphics and gameplay. */
 	private Settings gameSettings;
 
+	/** The statistics used by the scoring system */
+	private Statistics scoreStatistics;
+
 	/** The input object through which this game can receive input and register listeners */
 	private Input input;
+
+	/** The animation system that handles updating of all animations */
+	private AnimationSystem animationSystem;
 
 	/** The list of all the entities that exist in our game */
 	private ArrayList<Entity> entities;
@@ -56,11 +64,14 @@ public class Game extends Canvas {
 	/** The number of aliens left on the screen */
 	private AlienSwarm alienSwarm;
 	
-	/** The message to display which waiting for a key press */
+	/** The message to display while waiting for a key press */
 	private String message;
 
 	/** The font used for large text */
 	private Font largeFont;
+
+	/** The font used for large text */
+	private Font mediumFont;
 
 	 /** The font used for small text */
 	private Font smallFont;
@@ -71,7 +82,9 @@ public class Game extends Canvas {
 	public Game(Input input, Settings settings) {
 		this.gameWindow = null; // Will be assigned by the GameWindow via setParent() when the game begins.
 		this.gameSettings = settings;
+		this.scoreStatistics = new Statistics();
 		this.input = input;
+		this.animationSystem = new AnimationSystem();
 
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
@@ -80,6 +93,7 @@ public class Game extends Canvas {
 
 		// These will be initialized in the init() method
 		this.largeFont = null;
+		this.mediumFont = null;
 		this.smallFont = null;
 	}
 
@@ -94,8 +108,9 @@ public class Game extends Canvas {
 
 	public void init() {
 		// Load fonts
-		largeFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 24.0f);
-		smallFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 18.0f);
+		largeFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 36.0f);
+		mediumFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 30.0f);
+		smallFont = AssetStore.get().getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 24.0f);
 
 		// Load ship sprite
 		Sprite shipBaseSprite = AssetStore.get().getSprite("sprites/ship.png");
@@ -118,12 +133,18 @@ public class Game extends Canvas {
 		alienSwarm.clear();
 		message = "";
 
+		// Clear all scoring statistics
+		scoreStatistics.reset();
+
 		// Blank out any keyboard input we might currently have
 		input.reset();
 
 		// Clear out any existing entities and initialize a new set
 		entities.clear();
 		removeList.clear();
+
+		// Clear all animations
+		animationSystem.clear();
 
 		// Create entities
 		initEntities();
@@ -164,15 +185,41 @@ public class Game extends Canvas {
 	/**
 	 * Notification that the player has fired a shot.
 	 */
-	public void notifyPlayerShoot() {
-		// Nothing to do yet
+	public void notifyPlayerShoot(ShotEntity shot) {
+		scoreStatistics.trackShotFired(shot);
 	}
 
 	/**
 	 * Notification that a shot fired by the player has missed and gone off the top of the screen.
 	 */
 	public void notifyShotMissed(ShotEntity shot) {
-		// Nothing to do yet
+		scoreStatistics.trackShotMissed(shot);
+	}
+
+	/**
+	 * Notification that a shot fired by the player has hit a valid target.
+	 */
+	public void notifyShotHit(ShotEntity shot) {
+		scoreStatistics.trackShotHit(shot);
+	}
+
+	/**
+	 * Notification that an alien has been killed
+	 */
+	public void notifyAlienKilled(AlienEntity alien) {
+		// Remove the alien from the swarm
+		alienSwarm.removeAlien(alien);
+
+		System.out.println("Alien killed: " + alienSwarm.count());
+
+		// If there are none left, the player has won!
+		if (alienSwarm.count() == 0) {
+			notifyWin();
+		}
+
+		// If there are still some aliens left then they all need to get faster, so
+		// speed up all the existing aliens
+		alien.getSwarm().increaseSpeed(1.02f);
 	}
 
 	/**
@@ -197,25 +244,6 @@ public class Game extends Canvas {
 	}
 	
 	/**
-	 * Notification that an alien has been killed
-	 */
-	public void notifyAlienKilled(AlienEntity alien) {
-		// Remove the alien from the swarm
-		alienSwarm.removeAlien(alien);
-
-		System.out.println("Alien killed: " + alienSwarm.count());
-
-		// If there are none left, the player has won!
-		if (alienSwarm.count() == 0) {
-			notifyWin();
-		}
-
-		// If there are still some aliens left then they all need to get faster, so
-		// speed up all the existing aliens
-		alien.getSwarm().increaseSpeed(1.02f);
-	}
-	
-	/**
 	 * Attempt to fire a shot from the player. Its called "try"
 	 * since we must first check that the player can fire at this 
 	 * point, i.e. has he/she waited long enough between shots
@@ -231,7 +259,7 @@ public class Game extends Canvas {
 
 			ship.resetShotTimer();
 
-			notifyPlayerShoot();
+			notifyPlayerShoot(shot);
 		}
 	}
 
@@ -265,6 +293,9 @@ public class Game extends Canvas {
 		// Remove any entity that has been marked for clean up
 		entities.removeAll(removeList);
 		removeList.clear();
+
+		// Update animation system
+		animationSystem.update(deltaMs);
 
 		// resolve the movement of the ship. First assume the ship
 		// isn't moving. If either cursor key is pressed then
@@ -312,6 +343,8 @@ public class Game extends Canvas {
 		}
 	}
 
+	private AnimatedText[] textLines = new AnimatedText[2];
+
 	/**
 	 * The render method, this is called each frame after update()
 	 * it handles the following:
@@ -329,18 +362,42 @@ public class Game extends Canvas {
 		// if we're waiting for an "any key" press then draw the
 		// current message
 		if (input.isWaitingForKeyPress()) {
-			g.setFont(largeFont);
 			g.setColor(Color.white);
-			g.drawString(message,(800-g.getFontMetrics().stringWidth(message))/2,250);
-			g.drawString("Press any key",(800-g.getFontMetrics().stringWidth("Press any key"))/2,300);
+
+			Font[] lineFont = new Font[] { largeFont, mediumFont };
+			String[] lines = new String[] { message, "Press any key" };
+			int[] lineYs = new int[] { 250, 300 };
+
+			for (int i = 0; i < 2; i++) {
+				g.setFont(lineFont[i]);
+
+				if (textLines[i] == null || !textLines[i].getText().equals(lines[i])) {
+					if (textLines[i] != null) {
+						textLines[i].unregisterAnimations(animationSystem);
+					}
+					textLines[i] = AnimatedText.create(g, lines[i], 400, lineYs[i]);
+					textLines[i].registerAnimations(animationSystem);
+				}
+				if (textLines[i] != null) {
+					textLines[i].render(g);
+				}
+			}
 		}
+
+		// Render statistics
+		g.setFont(smallFont);
+		g.setColor(Color.white);
+		g.drawString("Fired:    " + scoreStatistics.getShotsFired(), 650, 20);
+		g.drawString("Hit:      " + scoreStatistics.getShotsHit(), 650, 40);
+		g.drawString("Accuracy: " + Math.round(scoreStatistics.getAccuracy() * 100f) + "%", 650, 60);
+		g.drawString("Combo:    " + scoreStatistics.getHitCombo(), 650, 80);
 
 		// Render FPS counter
 		if (gameWindow != null) {
-			int fps = (int) (gameWindow.getAverageFrameRate());
 			g.setFont(smallFont);
 			g.setColor(Color.white);
-			g.drawString("FPS: " + fps, 730, 20);
+			int fps = (int) (gameWindow.getAverageFrameRate());
+			g.drawString("FPS: " + fps, 5, 20);
 		}
 	}
 

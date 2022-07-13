@@ -17,7 +17,7 @@ public class AnimationSystem {
         removeList = new ArrayList<>();
     }
 
-    void update(long deltaMs) {
+    public void update(long deltaMs) {
         for (Map.Entry<Animation, AnimationStatus> entry : animations.entrySet()) {
             Animation animation = entry.getKey();
             AnimationStatus status = entry.getValue();
@@ -87,42 +87,53 @@ public class AnimationSystem {
         }
     }
 
-    void start(Animation animation) {
+    public void start(Animation animation) {
         AnimationStatus status = getStatus(animation, true);
         animation.reset();
         status.play();
     }
 
-    void pause(Animation animation) {
+    public void remove(Animation animation) {
+        removeList.add(animation);
+    }
+
+    public void pause(Animation animation) {
         AnimationStatus status = getStatus(animation, false);
         if (status != null) {
             status.pause();
         }
     }
 
-    boolean isPlaying(Animation animation) {
+    public boolean isPlaying(Animation animation) {
         AnimationStatus status = getStatus(animation, false);
         return (status != null) && !status.isPaused();
     }
 
-    void setLooping(Animation animation, boolean looping) {
+    public void setLooping(Animation animation, boolean looping) {
         AnimationStatus status = getStatus(animation, false);
         if (status != null) {
             status.setLooping(looping);
         }
     }
 
-    boolean isLooping(Animation animation) {
+    public boolean isLooping(Animation animation) {
         AnimationStatus status = getStatus(animation, false);
         return (status != null) && status.isLooping();
     }
 
-    void finish(Animation animation) {
+    public void addListener(Animation animation, AnimationListener listener) {
+        AnimationStatus status = getStatus(animation, false);
+        if (status != null) {
+            status.addListener(listener);
+        }
+    }
+
+    public void finish(Animation animation) {
         animation.finish();
         pause(animation);
     }
 
-    void finishAll() {
+    public void finishAll() {
         for (Map.Entry<Animation, AnimationStatus> entry : animations.entrySet()) {
             Animation animation = entry.getKey();
             AnimationStatus status = entry.getValue();
@@ -130,6 +141,11 @@ public class AnimationSystem {
             animation.finish();
             status.pause();
         }
+    }
+
+    public void clear() {
+        this.animations.clear();
+        this.removeList.clear();
     }
 
     /**

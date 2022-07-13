@@ -139,6 +139,7 @@ public class GameWindow extends Canvas {
 
             // Tell the graphics system to draw with anti-aliasing (for smooth font rendering)
             g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+            g.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
 
             // Clear the screen
             g.setColor(Color.black);

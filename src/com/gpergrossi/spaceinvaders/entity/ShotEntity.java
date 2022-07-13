@@ -79,7 +79,8 @@ public class ShotEntity extends SpriteEntity {
 			game.removeEntity(this);
 			game.removeEntity(alien);
 			
-			// notify the game that the alien has been killed
+			// notify the game
+			game.notifyShotHit(this);
 			game.notifyAlienKilled(alien);
 
 			used = true;
