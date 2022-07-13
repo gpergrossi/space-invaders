@@ -8,12 +8,9 @@ import java.util.ArrayList;
 
 public class Container extends Component {
 
-    protected boolean isOverlay;
-
     protected ArrayList<Component> components;
 
     public Container() {
-        this.isOverlay = false;
         this.components = new ArrayList<>();
     }
 
