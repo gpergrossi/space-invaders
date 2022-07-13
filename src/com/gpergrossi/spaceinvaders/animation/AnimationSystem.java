@@ -12,9 +12,12 @@ public class AnimationSystem {
     private HashMap<Animation, AnimationStatus> animations;
     private List<Animation> removeList;
 
+    private ArrayList<Runnable> finishCallbacks;
+
     public AnimationSystem() {
         animations = new HashMap<>();
         removeList = new ArrayList<>();
+        finishCallbacks = new ArrayList<>();
     }
 
     public void update(long deltaMs) {
@@ -76,6 +79,25 @@ public class AnimationSystem {
             animations.remove(animation);
         }
         removeList.clear();
+
+        if (finishCallbacks.size() > 0) {
+            boolean anyUnfinished = false;
+            for (Map.Entry<Animation, AnimationStatus> entry : animations.entrySet()) {
+                Animation animation = entry.getKey();
+                AnimationStatus status = entry.getValue();
+
+                if (!status.isLooping() && animation.getCurrentTime() < animation.getDuration()) {
+                    anyUnfinished = true;
+                    break;
+                }
+            }
+            if (!anyUnfinished) {
+                for (Runnable cb : finishCallbacks) {
+                    cb.run();
+                }
+                finishCallbacks.clear();
+            }
+        }
 
         //printDebug();
     }
@@ -171,6 +193,10 @@ public class AnimationSystem {
             animation.finish();
             status.pause();
         }
+    }
+
+    public void awaitFinish(Runnable finishCallback) {
+        finishCallbacks.add(finishCallback);
     }
 
     public void clear() {

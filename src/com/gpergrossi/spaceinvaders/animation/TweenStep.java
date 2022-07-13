@@ -20,6 +20,7 @@ public class TweenStep<T> implements Animation {
         this.endValue = endValue;
         this.lerpFunction = (lerpFunction != null) ? lerpFunction : AnimationUtils.getDefaultLerpFunction(startValue, endValue);
         this.tweenFunction = (tweenFunction != null) ? tweenFunction : ((t) -> t);
+        this.currentValue = startValue;
     }
 
     public T getValue() {

@@ -50,9 +50,6 @@ public class Game extends Canvas {
 	/** The state of the game */
 	private GameState state;
 
-	/** Is the game paused? */
-	private boolean paused;
-
 	/** The list of all the entities that exist in our game */
 	private ArrayList<Entity> entities;
 
@@ -86,7 +83,6 @@ public class Game extends Canvas {
 		this.animationSystem = new AnimationSystem();
 		this.screenStack = new ArrayList<>();
 		this.state = GameState.NONE;
-		this.paused = false;
 
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
@@ -159,7 +155,7 @@ public class Game extends Canvas {
 		this.state = state;
 
 		switch (state) {
-			case NONE:
+			default:
 				break;
 
 			case TITLE_SCREEN:
@@ -183,11 +179,15 @@ public class Game extends Canvas {
 
 			case INTRO_ANIMATION:
 				screenStack.clear();
-				enterState(GameState.GAMEPLAY);
-				break;
 
-			case GAMEPLAY:
-				// Nothing to do when entering the gameplay state
+				// Start spawning animations
+				animationSystem.clear();
+				alienSwarm.beginSpawning(animationSystem);
+
+				// Wait for them to complete
+				animationSystem.awaitFinish(() -> {
+					enterState(GameState.GAMEPLAY);
+				});
 				break;
 
 			case PAUSED:
@@ -221,7 +221,6 @@ public class Game extends Canvas {
 					});
 				});
 
-				this.paused = true;
 				break;
 
 			case VICTORY:
@@ -264,7 +263,10 @@ public class Game extends Canvas {
 		switch (state) {
 			case PAUSED:
 				closeScreen(Screens.get().getPauseScreen());
-				this.paused = false;
+				break;
+
+			case INTRO_ANIMATION:
+				alienSwarm.cancelSpawning(animationSystem);
 				break;
 
 			default:
@@ -327,7 +329,10 @@ public class Game extends Canvas {
 		// Create a block of aliens (5 rows, by 12 aliens, spaced evenly)
 		for (int row = 0; row < 5; row++) {
 			for (int x = 0; x < 12; x++) {
-				Entity alien = new AlienEntity(this, alienSwarm, Sprites.get().getAlienSprite(), 100+(x*50), (50)+row*30);
+				double dist = Math.sqrt((5-row)*(5-row) + (x-5.5)*(x-5.5));
+				double delay = (dist / 7.433);
+
+				Entity alien = new AlienEntity(this, alienSwarm, Sprites.get().getAlienSprite(), 100+(x*50), (50)+row*30, delay);
 				entities.add(alien);
 			}
 		}
@@ -504,8 +509,8 @@ public class Game extends Canvas {
 
 		// if escape is pressed, pause/unpause the game
 		if (input.wasEscapePressed()) {
-			if (!paused) pause();
-			else resume();
+			if (state == GameState.GAMEPLAY) pause();
+			else if (state == GameState.PAUSED) resume();
 		}
 
 		if (input.wasEnterPressed() && state == GameState.GAMEPLAY) {
@@ -596,15 +601,17 @@ public class Game extends Canvas {
 			g.drawString("" + scoreStatistics.getHitCombo(), 750, 86);
 		}
 
-		// Render FPS counter
-		if (gameWindow != null) {
-			g.setFont(Fonts.get().getSmallFont());
-			g.setColor(Color.white);
-			int fps = (int) (gameWindow.getAverageFrameRate());
-			g.drawString("FPS: " + fps, 5, 20);
-		}
+		if (gameSettings.getShowDebugInfo()) {
+			// Render FPS counter
+			if (gameWindow != null) {
+				g.setFont(Fonts.get().getSmallFont());
+				g.setColor(Color.white);
+				int fps = (int) (gameWindow.getAverageFrameRate());
+				g.drawString("FPS: " + fps, 5, 20);
+			}
 
-		g.drawString("State: " + state, 5, 40);
+			g.drawString("State: " + state, 5, 40);
+		}
 	}
 
 }

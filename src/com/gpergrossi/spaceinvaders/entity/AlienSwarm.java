@@ -1,5 +1,8 @@
 package com.gpergrossi.spaceinvaders.entity;
 
+import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
+import com.gpergrossi.spaceinvaders.animation.TweenSequence;
+
 import java.util.ArrayList;
 
 public class AlienSwarm {
@@ -7,10 +10,12 @@ public class AlienSwarm {
     private ArrayList<AlienEntity> aliens;
 
     private boolean directionChangeRequested;
+    private boolean spawning;
 
     public AlienSwarm() {
         aliens = new ArrayList<>();
         directionChangeRequested = false;
+        spawning = false;
     }
 
     /**
@@ -50,6 +55,25 @@ public class AlienSwarm {
         directionChangeRequested = true;
     }
 
+    public void beginSpawning(AnimationSystem animationSystem) {
+        this.spawning = true;
+        for (AlienEntity alien : aliens) {
+            TweenSequence<Double> animation = alien.getSpawnAnimation();
+            animationSystem.start(animation, animation.getDefaultStartTime(), false, null);
+        }
+    }
+
+    public void cancelSpawning(AnimationSystem animationSystem) {
+        for (AlienEntity alien : aliens) {
+            TweenSequence<Double> animation = alien.getSpawnAnimation();
+            animationSystem.remove(animation);
+        }
+    }
+
+    public boolean isSpawning() {
+        return spawning;
+    }
+
     /**
      * Called once per loop to manage event communication between aliens in the Formation.
      */
@@ -59,6 +83,18 @@ public class AlienSwarm {
                 alien.changeDirection();
             }
             directionChangeRequested = false;
+        }
+        if (spawning) {
+            boolean stillSpawning = false;
+            for (AlienEntity alien : aliens) {
+                if (alien.isSpawning()) {
+                    stillSpawning = true;
+                    break;
+                }
+            }
+            if (!stillSpawning) {
+                spawning = false;
+            }
         }
     }
 

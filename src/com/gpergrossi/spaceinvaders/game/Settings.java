@@ -11,6 +11,7 @@ public class Settings {
 
     private int playerReloadTime = 500; // Half a second
 
+    private boolean showDebugInfo = false;
 
 
     public int getScreenWidth() {
@@ -34,4 +35,6 @@ public class Settings {
     }
 
     public int getPlayerReloadTime() { return playerReloadTime; }
+
+    public boolean getShowDebugInfo() { return showDebugInfo; }
 }

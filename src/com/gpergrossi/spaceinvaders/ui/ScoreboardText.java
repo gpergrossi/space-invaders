@@ -89,8 +89,9 @@ public class ScoreboardText extends Component {
         // Value display
         double value = valueAnimation.getValue() * valueSupplier.getAsDouble();
         String valueStr = String.format(format, value);
+        if (Double.isNaN(value)) valueStr = "N/A";
 
-        // Right-aligned value
+            // Right-aligned value
         int valueStrWidth = g.getFontMetrics().stringWidth(valueStr);
         float valueX = x + width - valueStrWidth;
         g.drawString(valueStr, valueX, y);

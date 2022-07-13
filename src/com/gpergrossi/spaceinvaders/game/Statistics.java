@@ -150,7 +150,6 @@ public class Statistics {
      * down every time the player fires a shot.
      */
     public float getAccuracy() {
-        if (shotsFired == 0) return 1.0f;
         return (float) (shotsFired - shotsMissed) / shotsFired;
     }
 

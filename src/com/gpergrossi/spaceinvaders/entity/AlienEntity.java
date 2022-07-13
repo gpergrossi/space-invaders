@@ -1,8 +1,12 @@
 package com.gpergrossi.spaceinvaders.entity;
 
+import com.gpergrossi.spaceinvaders.animation.*;
 import com.gpergrossi.spaceinvaders.game.Game;
 import com.gpergrossi.spaceinvaders.game.Settings;
 import com.gpergrossi.spaceinvaders.assets.Sprite;
+import com.gpergrossi.spaceinvaders.render.AlienEntityRenderer;
+import com.gpergrossi.spaceinvaders.render.Renderer;
+import com.gpergrossi.spaceinvaders.render.SpriteEntityRenderer;
 
 /**
  * An entity which represents one of our space invader aliens.
@@ -17,6 +21,9 @@ public class AlienEntity extends SpriteEntity {
 	/** The swarm to which the entity belongs */
 	private AlienSwarm swarm;
 
+	/** The spawning animation's only animation variable */
+	private TweenSequence<Double> spawnAnimation;
+
 	/**
 	 * Construct an entity based on a sprite image and a location.
 	 *
@@ -26,13 +33,26 @@ public class AlienEntity extends SpriteEntity {
 	 * @param x      The initial x location of this entity.
 	 * @param y      The initial y location of this entity.
 	 */
-	public AlienEntity(Game game, AlienSwarm swarm, Sprite sprite, float x, float y) {
+	public AlienEntity(Game game, AlienSwarm swarm, Sprite sprite, float x, float y, double spawnDelay) {
 		super(game, sprite, x, y);
 
 		this.dx = -moveSpeed;
 
 		this.swarm = swarm;
 		swarm.addAlien(this);
+
+		this.spawnAnimation = new TweenSequence<>("Enemy Spawn Animation",
+			new TweenStep<>(0.5, 0.0, 1.0, LerpFunction.LERP_DOUBLE, TweenFunction.EASE_OUT_QUAD)
+		);
+		this.spawnAnimation.setDefaultStartTime(-spawnDelay);
+	}
+
+	public TweenSequence<Double> getSpawnAnimation() {
+		return spawnAnimation;
+	}
+
+	public boolean isSpawning() {
+		return spawnAnimation.getCurrentTime() < spawnAnimation.getDuration();
 	}
 
 	/**
@@ -46,7 +66,6 @@ public class AlienEntity extends SpriteEntity {
 	 * Flips this alien's movement direction and drops it down by 10.
 	 */
 	public void changeDirection() {
-
 		Settings settings = game.getSettings();
 		int deathZoneMaxY = settings.getScreenHeight() - settings.getDeathZoneHeight() - (int) this.getHeight();
 
@@ -67,6 +86,9 @@ public class AlienEntity extends SpriteEntity {
 	 */
 	@Override
 	public void updateLogic(long delta) {
+		// Don't move while spawning
+		if (swarm.isSpawning()) return;
+
 		// Move the ship using the super class implementation
 		super.updateLogic(delta);
 
@@ -106,5 +128,10 @@ public class AlienEntity extends SpriteEntity {
 	@Override
 	public void onCollision(Entity other) {
 		// collisions with aliens are handled elsewhere
+	}
+
+	@Override
+	public Renderer getRenderer() {
+		return AlienEntityRenderer.get();
 	}
 }

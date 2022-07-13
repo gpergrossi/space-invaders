@@ -26,7 +26,7 @@ public class Sprites {
     public void load() {
         shipBaseSprite = AssetStore.get().getSprite("sprites/ship.png");
         shipMaskSprite = AssetStore.get().getSprite("sprites/ship-mask.png");
-        shipSprite = new TintedSprite(shipBaseSprite, shipMaskSprite, Color.RED);
+        shipSprite = new TintedSprite(shipBaseSprite, shipMaskSprite, Color.WHITE);
         alienSprite = AssetStore.get().getSprite("sprites/alien.gif");
         shotSprite = AssetStore.get().getSprite("sprites/shot.gif");
     }

@@ -39,28 +39,28 @@ public class GameOverScreen extends Screen {
 
         // Score readouts
         ScoreboardText shotsFiredText = new ScoreboardText(
-                200, 220, 400, 50, 250,
+                250, 220, 300, 50, 200,
                 "Shots Fired:", "%.0f", () -> stats.getShotsFired(),
                 Fonts.get().getMediumFont(), 1
         );
         this.add(shotsFiredText);
 
         ScoreboardText enemiesKilledText = new ScoreboardText(
-                200, 270, 400, 50, 250,
+                250, 270, 300, 50, 200,
                 "Enemies Killed:", "%.0f", () -> stats.getShotsHit(),
                 Fonts.get().getMediumFont(), 2
         );
         this.add(enemiesKilledText);
 
         ScoreboardText accuracyText = new ScoreboardText(
-                200, 320, 400, 50, 250,
+                250, 320, 300, 50, 200,
                 "Accuracy:", "%.01f%%", () -> (100f * stats.getAccuracy()),
                 Fonts.get().getMediumFont(), 3
         );
         this.add(accuracyText);
 
         ScoreboardText highestComboText = new ScoreboardText(
-                200, 370, 400, 50, 250,
+                250, 370, 300, 50, 200,
                 "Highest Combo:", "%.0f", () -> stats.getMaxHitCombo(),
                 Fonts.get().getMediumFont(), 4
         );
