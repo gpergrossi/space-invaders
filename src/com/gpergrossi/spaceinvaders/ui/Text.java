@@ -15,14 +15,19 @@ public class Text extends Component {
     protected Font font;
     protected boolean centered;
 
-    public Text(int x, int y, int width, int height, String text, Font font, boolean centered) {
+    public Text(int x, int y, int width, int height, String text, Font font) {
         this.x = x;
         this.y = y;
         this.width = width;
         this.height = height;
         this.text = text;
         this.font = font;
-        this.centered = centered;
+        this.centered = false;
+    }
+
+    public Text centered() {
+        this.centered = true;
+        return this;
     }
 
     @Override
@@ -47,18 +52,21 @@ public class Text extends Component {
 
     @Override
     public void render(Graphics2D g) {
-        // Foreground color
-        g.setColor(Color.WHITE);
-
-        // Draw text
         g.setFont(font);
+
+        float posX = x;
+        float posY = y;
+
         if (centered) {
             int strWidth = g.getFontMetrics().stringWidth(text);
             int ascent = g.getFontMetrics().getAscent();
-            g.drawString(text, x + (width - strWidth) * 0.5f, y + ascent);
-        } else {
-            g.drawString(text, x, y);
+            posX = x + (width - strWidth) * 0.5f;
+            posY = y + ascent;
         }
+
+        // Foreground color
+        g.setColor(Color.WHITE);
+        g.drawString(text, posX, posY);
     }
 
 }

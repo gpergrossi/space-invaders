@@ -1,10 +1,12 @@
 package com.gpergrossi.spaceinvaders.game;
 
 import com.gpergrossi.spaceinvaders.assets.*;
+import com.gpergrossi.spaceinvaders.render.Starfield;
 import com.gpergrossi.spaceinvaders.ui.AnimatedText;
 import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
 import com.gpergrossi.spaceinvaders.entity.*;
 import com.gpergrossi.spaceinvaders.ui.AnimatedTextEffect;
+import com.gpergrossi.spaceinvaders.ui.screens.Screen;
 import com.gpergrossi.spaceinvaders.ui.screens.Screens;
 
 import java.awt.*;
@@ -43,6 +45,12 @@ public class Game extends Canvas {
 	/** The animation system that handles updating of all animations */
 	private AnimationSystem animationSystem;
 
+	/** Which screens are open */
+	private ArrayList<Screen> screenStack;
+
+	/** The state of the game */
+	private GameState state;
+
 	/** The list of all the entities that exist in our game */
 	private ArrayList<Entity> entities;
 
@@ -55,11 +63,12 @@ public class Game extends Canvas {
 	/** The speed at which the player's ship should move (pixels/sec) */
 	private float moveSpeed;
 
-	/** The number of aliens left on the screen */
+	/** Keeps track of all alien entities */
 	private AlienSwarm alienSwarm;
-	
-	/** The message to display while waiting for a key press */
-	private String message;
+
+	/** The background star field */
+	private Starfield starfield;
+
 
 	/**
 	 * Construct our game and set it running.
@@ -70,11 +79,13 @@ public class Game extends Canvas {
 		this.scoreStatistics = new Statistics();
 		this.input = input;
 		this.animationSystem = new AnimationSystem();
+		this.screenStack = new ArrayList<>();
 
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
 
-		alienSwarm = new AlienSwarm();
+		this.alienSwarm = new AlienSwarm();
+		this.starfield = new Starfield(settings.getScreenWidth(), settings.getScreenHeight(), 20, 1000);
 	}
 
 	public void setParent(GameWindow window) {
@@ -97,16 +108,12 @@ public class Game extends Canvas {
 		Sprites.get().load();
 
 		// Start the game in a paused state
-		this.reset();
-
-		// The game is now ready, wait for a key press from the user before beginning.
-		input.waitKey();
+		this.enterState(GameState.TITLE_SCREEN);
 	}
 
 	public void reset() {
 		// Initialize game state variables
 		moveSpeed = 300;
-		message = "";
 
 		// Clear all scoring statistics
 		scoreStatistics.reset();
@@ -124,7 +131,40 @@ public class Game extends Canvas {
 		// Create entities
 		initEntities();
 	}
-	
+
+	private void enterState(GameState state) {
+		this.state = state;
+
+		switch (state) {
+			case TITLE_SCREEN:
+				reset();
+				screenStack.clear();
+				screenStack.add(Screens.get().getTitleScreen());
+
+				// Wait for a key press from the user before beginning.
+				input.waitKey(() -> enterState(GameState.INTRO_ANIMATION));
+				break;
+
+			case INTRO_ANIMATION:
+				screenStack.clear();
+				enterState(GameState.GAMEPLAY);
+				break;
+
+			case GAMEPLAY:
+				break;
+
+			case VICTORY:
+				//message = "Well done! You Win!";
+				input.waitKey(() -> enterState(GameState.TITLE_SCREEN));
+				break;
+
+			case DEATH:
+				//message = "Oh no! They got you, try again?";
+				input.waitKey(() -> enterState(GameState.TITLE_SCREEN));
+				break;
+		}
+	}
+
 	/**
 	 * Initialise the starting state of the entities (ship and aliens). Each
 	 * entity will be added to the overall list of entities in the game.
@@ -195,24 +235,18 @@ public class Game extends Canvas {
 	}
 
 	/**
-	 * Notification that the player has died. 
-	 */
-	public void notifyDeath() {
-		message = "Oh no! They got you, try again?";
-
-		Runnable callback = () -> { this.reset(); };
-		input.waitKey(callback);
-	}
-	
-	/**
 	 * Notification that the player has won since all the aliens
 	 * are dead.
 	 */
 	public void notifyWin() {
-		message = "Well done! You Win!";
+		enterState(GameState.VICTORY);
+	}
 
-		Runnable callback = () -> { this.reset(); };
-		input.waitKey(callback);
+	/**
+	 * Notification that the player has died. 
+	 */
+	public void notifyDeath() {
+		enterState(GameState.DEATH);
 	}
 	
 	/**
@@ -245,20 +279,23 @@ public class Game extends Canvas {
 	 */
 	public void update(long deltaMs) {
 
+		// Allows the input system's wait key callback to run synchronously with the main thread.
+		input.checkCallbacks();
+
 		// Update all entities
-		if (!input.isWaitingForKeyPress()) {
+		if (state == GameState.GAMEPLAY) {
 			for (int i = 0; i < entities.size(); i++) {
 				Entity entity = (Entity) entities.get(i);
 				entity.updateLogic(deltaMs);
 				entity.updateAnimation(deltaMs);
 			}
+
+			// Update the alien swarm
+			alienSwarm.update();
+
+			// Do collision checks
+			doCollisions();
 		}
-
-		// Update the alien swarm
-		alienSwarm.update();
-
-		// Do collision checks
-		doCollisions();
 
 		// Remove any entity that has been marked for clean up
 		entities.removeAll(removeList);
@@ -266,6 +303,9 @@ public class Game extends Canvas {
 
 		// Update animation system
 		animationSystem.update(deltaMs);
+
+		// Update star field twinkle
+		starfield.update(deltaMs);
 
 		// resolve the movement of the ship. First assume the ship
 		// isn't moving. If either cursor key is pressed then
@@ -323,12 +363,29 @@ public class Game extends Canvas {
 	 * <p>
 	 */
 	public void render(Graphics2D g) {
+		starfield.render(g);
+
 		// cycle round drawing all the entities we have in the game
 		for (int i = 0; i < entities.size(); i++) {
 			Entity entity = (Entity) entities.get(i);
 			entity.render(g);
 		}
 
+		// Render all visible screens
+		if (screenStack.size() > 0) {
+			int firstVisibleScreenIndex = 0;
+			for (int i = screenStack.size() - 1; i >= 0; i--) {
+				if (!screenStack.get(i).isOverlay()) {
+					firstVisibleScreenIndex = i;
+					break;
+				}
+			}
+			for (int i = firstVisibleScreenIndex; i < screenStack.size(); i++) {
+				screenStack.get(i).render(g);
+			}
+		}
+
+		/*
 		// if we're waiting for an "any key" press then draw the
 		// current message
 		if (input.isWaitingForKeyPress()) {
@@ -359,6 +416,7 @@ public class Game extends Canvas {
 				}
 			}
 		}
+		*/
 
 		// Render statistics
 		g.setFont(Fonts.get().getSmallFont());
@@ -379,6 +437,8 @@ public class Game extends Canvas {
 			int fps = (int) (gameWindow.getAverageFrameRate());
 			g.drawString("FPS: " + fps, 5, 20);
 		}
+
+		g.drawString("State: " + state, 5, 40);
 	}
 
 }

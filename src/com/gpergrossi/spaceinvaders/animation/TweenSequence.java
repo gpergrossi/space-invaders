@@ -20,6 +20,8 @@ public class TweenSequence<T> implements Animation {
     private double currentTime;
     private int currentStepIndex;
 
+    private ValueListener<T> listener;
+
     public TweenSequence(TweenStep<T>... steps) {
         if (steps.length < 1) throw new IllegalArgumentException("Must provide at least one tween step!");
 
@@ -64,6 +66,10 @@ public class TweenSequence<T> implements Animation {
         return steps.get(index).getValue();
     }
 
+    public void setListener(ValueListener listener) {
+        this.listener = listener;
+    }
+
     @Override
     public void update(double delta) {
         double remainingDelta = delta;
@@ -87,6 +93,10 @@ public class TweenSequence<T> implements Animation {
                     currentStepIndex++;
                 }
             }
+        }
+
+        if (listener != null) {
+            listener.onChange(getValue());
         }
     }
 

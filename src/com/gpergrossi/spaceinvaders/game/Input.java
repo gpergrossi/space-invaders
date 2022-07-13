@@ -35,6 +35,9 @@ public class Input {
     /** A callback that is run() when the user presses a key while the input system is in a waitKey state. */
     private Runnable waitKeyCallback;
 
+    /** Flag is set to let the checkCallbacks() method know it's time to run */
+    private boolean waitKeyCleared;
+
     /** True if the left cursor key is currently pressed */
     private boolean leftPressed;
 
@@ -166,12 +169,7 @@ public class Input {
 
                     // No longer waiting for a key press.
                     waitingForKeyPress = false;
-
-                    // Call the callback if it was provided.
-                    if (waitKeyCallback != null) {
-                        waitKeyCallback.run();
-                        waitKeyCallback = null;
-                    }
+                    waitKeyCleared = true;
 
                 } else {
                     // if we hit escape, then quit the game
@@ -190,6 +188,21 @@ public class Input {
                 }
             }
         };
+    }
+
+    public void checkCallbacks() {
+        if (waitKeyCleared) {
+            waitKeyCleared = false;
+
+            // Call the callback if it was provided.
+            if (waitKeyCallback != null) {
+                // We have to do things in a weird order in case the callback
+                // method itself tries to set a new wait-key callback.
+                Runnable cb = waitKeyCallback;
+                waitKeyCallback = null;
+                cb.run();
+            }
+        }
     }
 
     public MouseListener getMouseListener() {

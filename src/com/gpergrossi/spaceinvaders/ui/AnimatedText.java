@@ -44,7 +44,7 @@ public class AnimatedText extends Text {
     private ArrayList<AnimatedTextCharacter> chars;
 
     public AnimatedText(int x, int y, int width, int height, String text, Font font, Graphics2D graphics, AnimatedTextEffect effect) {
-        super(x, y, width, height, text, font, true);
+        super(x, y, width, height, text, font);
 
         this.chars = createCharacters(graphics, text, x + width/2, y + height/2, effect);
     }
