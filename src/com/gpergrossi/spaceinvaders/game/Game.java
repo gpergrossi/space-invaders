@@ -108,13 +108,17 @@ public class Game extends Canvas {
 		return particleSystem;
 	}
 
+	public Statistics getScoreStatistics() {
+		return scoreStatistics;
+	}
+
 
 	public void init() {
 		// Load fonts
 		Fonts.get().load();
 
 		// Load screens
-		Screens.get().load();
+		Screens.get().load(this);
 
 		// Load sprites
 		Sprites.get().load();
@@ -183,6 +187,7 @@ public class Game extends Canvas {
 				break;
 
 			case GAMEPLAY:
+				// Nothing to do when entering the gameplay state
 				break;
 
 			case PAUSED:
@@ -236,9 +241,18 @@ public class Game extends Canvas {
 				input.waitKey(() -> enterState(GameState.TITLE_SCREEN));
 				break;
 
-			case DEATH:
+			case DEFEAT:
 				closeAllScreens();
-				openScreen(Screens.get().getDefeatScreen());
+
+				final DefeatScreen defeat = Screens.get().getDefeatScreen();
+				openScreen(defeat);
+
+				defeat.setOnReady(() -> {
+					defeat.getPlayAgainButton().setOnClick(() -> {
+						input.stopWaitKey();
+						enterState(GameState.TITLE_SCREEN);
+					});
+				});
 
 				// Wait for a key press from the user before resetting.
 				input.waitKey(() -> enterState(GameState.TITLE_SCREEN));
@@ -387,7 +401,7 @@ public class Game extends Canvas {
 	 */
 	public void notifyDeath() {
 		if (state == GameState.GAMEPLAY) {
-			enterState(GameState.DEATH);
+			enterState(GameState.DEFEAT);
 		}
 	}
 	
@@ -433,7 +447,7 @@ public class Game extends Canvas {
 		}
 
 		// Update all entities
-		if (state == GameState.GAMEPLAY || state == GameState.VICTORY || state == GameState.DEATH) {
+		if (state == GameState.GAMEPLAY || state == GameState.VICTORY || state == GameState.DEFEAT) {
 			for (int i = 0; i < entities.size(); i++) {
 				Entity entity = (Entity) entities.get(i);
 				entity.updateLogic(deltaMs);
@@ -495,7 +509,7 @@ public class Game extends Canvas {
 		}
 
 		if (input.wasEnterPressed() && state == GameState.GAMEPLAY) {
-			enterState(GameState.VICTORY);
+			enterState(GameState.DEFEAT);
 		}
 	}
 
@@ -541,14 +555,14 @@ public class Game extends Canvas {
 		// Render star field
 		starfield.render(g);
 
+		// Render particles behind entities
+		particleSystem.render(g);
+
 		// cycle round drawing all the entities we have in the game
 		for (int i = 0; i < entities.size(); i++) {
 			Entity entity = (Entity) entities.get(i);
 			entity.render(g);
 		}
-
-		// Render particles
-		particleSystem.render(g);
 
 		// Render all visible screens
 		if (screenStack.size() > 0) {

@@ -1,5 +1,7 @@
 package com.gpergrossi.spaceinvaders.ui.screens;
 
+import com.gpergrossi.spaceinvaders.game.Game;
+
 public class Screens {
 
     private static final Screens single = new Screens();
@@ -20,10 +22,10 @@ public class Screens {
         optionsScreen = null;
     }
 
-    public void load() {
+    public void load(Game game) {
         titleScreen = new TitleScreen();
-        victoryScreen = new VictoryScreen();
-        defeatScreen = new DefeatScreen();
+        victoryScreen = new VictoryScreen(game);
+        defeatScreen = new DefeatScreen(game);
         pauseScreen = new PauseScreen();
         optionsScreen = new OptionsScreen();
     }

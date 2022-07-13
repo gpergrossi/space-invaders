@@ -8,6 +8,6 @@ public enum GameState {
     GAMEPLAY,
     PAUSED,
     VICTORY,
-    DEATH
+    DEFEAT
 
 }

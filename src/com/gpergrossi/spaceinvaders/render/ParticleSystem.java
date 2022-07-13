@@ -57,7 +57,7 @@ public class ParticleSystem {
             p.velX = 20f * ((float) Math.random() * 2f - 1f);
             p.velY = 20f * ((float) Math.random());
 
-            p.maxLife = 0.5f;
+            p.maxLife *= 0.5f;
             p.initialSize = 0.5f;
             p.finalSize = 5f;
             addParticle(p);
@@ -68,28 +68,60 @@ public class ParticleSystem {
         for (int i = 0; i < 50; i++) {
             ColorParticle p = new ColorParticle(x, y, 0.05f);  // Somewhere between red and orange
 
-            burstVelocity(p, 20f, 60f);
+            burstVelocity(p, 20f, 40f);
+            p.velY -= 120;
 
             p.gravity = 0;
             p.drag = -0.05f;
-            p.maxLife = 1f;
-            p.initialSize = 0.5f;
-            p.finalSize = 5f;
+            p.initialSize = 2f;
+            p.finalSize = 0.5f;
+            addParticle(p);
+        }
+
+        for (int i = 0; i < 10; i++) {
+            ColorParticle p = new ColorParticle(x, y, 0.05f);  // Somewhere between red and orange
+
+            burstVelocity(p, 50f, 100f);
+            p.velY -= 120;
+
+            p.gravity = 0;
+            p.drag = -0.05f;
+            p.initialSize = 5f;
+            p.finalSize = 0.5f;
             addParticle(p);
         }
     }
 
     public void spawnDeadAlien(float x, float y, float velocityX) {
-        Sprite alien = Sprites.get().getAlienSprite();
-        if (alien == null) return;
+        // Spawn an alien body
+        {
+            Sprite alien = Sprites.get().getAlienSprite();
+            if (alien == null) return;
 
-        SpriteParticle p = new SpriteParticle(alien, x, y);
+            SpriteParticle p = new SpriteParticle(alien, x, y);
 
-        burstVelocity(p, 20f, 60f);
-        p.velY -= 20;
-        p.velY += velocityX;
+            burstVelocity(p, 20f, 60f);
+            p.velY -= 200;
+            p.velY += velocityX;
+            p.maxLife *= 2;
 
-        addParticle(p);
+            addParticle(p);
+        }
+
+        // And some blood
+        for (int i = 0; i < 50; i++) {
+            ColorParticle p = new ColorParticle(x, y, 0.36f);  // Greenish
+
+            burstVelocity(p, 20f, 60f);
+            p.velY -= 80;
+
+            p.initialSize = 0.5f;
+            p.initialSize = 5f;
+            p.gravity = 100f;
+            p.drag = 0.05f;
+
+            addParticle(p);
+        }
     }
 
     private static void burstVelocity(Particle particle, float minVelocity, float maxVelocity) {
@@ -122,7 +154,7 @@ public class ParticleSystem {
             this.velY = 0;
             this.drag = 0.1f;
             this.gravity = 100.0f;
-            this.maxLife = 1.0f;
+            this.maxLife = (float) (Math.random() * 0.3 + 0.7);
 
             this.initialized = false;
         }
