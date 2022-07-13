@@ -27,7 +27,8 @@ public class TweenStep<T> implements Animation {
     }
 
     private void recompute() {
-        double t = currentTime / duration;
+        double t = 0;
+        if (duration != 0.0) { t = currentTime / duration; }
         t = Math.max(Math.min(t, 1.0), 0.0);
         t = tweenFunction.tween(t);
         currentValue = lerpFunction.lerp(startValue, endValue, t);

@@ -1,11 +1,12 @@
 package com.gpergrossi.spaceinvaders.game;
 
-import com.gpergrossi.spaceinvaders.animation.AnimatedText;
+import com.gpergrossi.spaceinvaders.ui.AnimatedText;
 import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
 import com.gpergrossi.spaceinvaders.assets.AssetStore;
 import com.gpergrossi.spaceinvaders.assets.Sprite;
 import com.gpergrossi.spaceinvaders.assets.TintedSprite;
 import com.gpergrossi.spaceinvaders.entity.*;
+import com.gpergrossi.spaceinvaders.ui.AnimatedTextEffect;
 
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -375,7 +376,13 @@ public class Game extends Canvas {
 					if (textLines[i] != null) {
 						textLines[i].unregisterAnimations(animationSystem);
 					}
-					textLines[i] = AnimatedText.create(g, lines[i], 400, lineYs[i]);
+
+					String text = lines[i];
+					FontMetrics fm = g.getFontMetrics();
+					int strWidth = fm.stringWidth(text);
+					int strHeight = fm.getHeight();
+					int strAscent = fm.getAscent();
+					textLines[i] = new AnimatedText(400 - strWidth / 2, lineYs[i] - strAscent, strWidth, strHeight, text, g.getFont(), g, AnimatedTextEffect.DEFAULT);
 					textLines[i].registerAnimations(animationSystem);
 				}
 				if (textLines[i] != null) {
@@ -387,10 +394,14 @@ public class Game extends Canvas {
 		// Render statistics
 		g.setFont(smallFont);
 		g.setColor(Color.white);
-		g.drawString("Fired:    " + scoreStatistics.getShotsFired(), 650, 20);
-		g.drawString("Hit:      " + scoreStatistics.getShotsHit(), 650, 40);
-		g.drawString("Accuracy: " + Math.round(scoreStatistics.getAccuracy() * 100f) + "%", 650, 60);
-		g.drawString("Combo:    " + scoreStatistics.getHitCombo(), 650, 80);
+		g.drawString("Fired:", 650, 25);
+		g.drawString("Hit:", 650, 45);
+		g.drawString("Accuracy:", 650, 65);
+		g.drawString("Combo:", 650, 85);
+		g.drawString("" + scoreStatistics.getShotsFired(), 750, 26);
+		g.drawString("" + scoreStatistics.getShotsHit(), 750, 46);
+		g.drawString("" + Math.round(scoreStatistics.getAccuracy() * 100f) + "%", 750, 66);
+		g.drawString("" + scoreStatistics.getHitCombo(), 750, 86);
 
 		// Render FPS counter
 		if (gameWindow != null) {

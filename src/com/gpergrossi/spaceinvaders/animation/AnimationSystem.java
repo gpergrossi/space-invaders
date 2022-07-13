@@ -88,8 +88,14 @@ public class AnimationSystem {
     }
 
     public void start(Animation animation) {
+        this.start(animation, false, 0, null);
+    }
+
+    public void start(Animation animation, boolean looping, double startTime, AnimationListener listener) {
         AnimationStatus status = getStatus(animation, true);
-        animation.reset();
+        animation.seek(startTime);
+        status.setLooping(looping);
+        if (listener != null) { status.addListener(listener); }
         status.play();
     }
 

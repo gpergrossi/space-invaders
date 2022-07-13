@@ -1,5 +1,6 @@
 package com.gpergrossi.spaceinvaders.ui;
 
+import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
 import com.gpergrossi.spaceinvaders.game.Input;
 
 import java.awt.*;
@@ -8,7 +9,7 @@ import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 
-public class Button {
+public class Button extends Component {
 
     private int x;
     private int y;
@@ -38,16 +39,29 @@ public class Button {
         this.mouseMotionListener = createMouseMotionListener();
     }
 
-    public void registerInputEvents(Input input) {
+    @Override
+    public void registerInputListeners(Input input) {
         input.addMouseListener(mouseListener);
         input.addMouseMotionListener(mouseMotionListener);
     }
 
-    public void unregisterInputEvents(Input input) {
+    @Override
+    public void unregisterInputListeners(Input input) {
         input.removeMouseListener(mouseListener);
         input.removeMouseMotionListener(mouseMotionListener);
     }
 
+    @Override
+    public void registerAnimations(AnimationSystem animationSystem) {
+        // No animations for Button
+    }
+
+    @Override
+    public void unregisterAnimations(AnimationSystem animationSystem) {
+        // No animations for Button
+    }
+
+    @Override
     public void render(Graphics2D g) {
         // Background color
         if (pressed) {

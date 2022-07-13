@@ -4,8 +4,18 @@ import java.util.ArrayList;
 
 public class TweenSequence<T> implements Animation {
 
+    /**
+     * Creates a TweenSequence that remains constant throughout its duration.
+     */
+    public static <T> TweenSequence<T> createConstant(double duration, T value) {
+        TweenStep<T> step = new TweenStep<>(duration, value, value, null, null);
+        return new TweenSequence<>(step);
+    }
+
     private double totalDuration;
     private ArrayList<TweenStep<T>> steps;
+    private boolean looping;
+    private double defaultStartTime;
 
     private double currentTime;
     private int currentStepIndex;
@@ -18,6 +28,8 @@ public class TweenSequence<T> implements Animation {
         for (int i = 0; i < steps.length; i++) {
             addStep(steps[i]);
         }
+        this.looping = false;
+        this.defaultStartTime = 0;
 
         this.currentTime = 0;
         currentStepIndex = 0;
@@ -26,6 +38,22 @@ public class TweenSequence<T> implements Animation {
     private void addStep(TweenStep<T> step) {
         this.steps.add(step);
         this.totalDuration += step.getDuration();
+    }
+
+    public void setLooping(boolean enabled) {
+        this.looping = enabled;
+    }
+
+    public boolean isLooping() {
+        return looping;
+    }
+
+    public void setDefaultStartTime(double time) {
+        this.defaultStartTime = time;
+    }
+
+    public double getDefaultStartTime() {
+        return this.defaultStartTime;
     }
 
     public T getValue() {
