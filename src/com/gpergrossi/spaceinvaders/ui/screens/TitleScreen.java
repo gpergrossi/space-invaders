@@ -30,7 +30,7 @@ public class TitleScreen extends Screen {
         this.add(startButton);
 
         this.add(
-                new Text(0, 450, 800, 100, "... or press any key", Fonts.get().getMediumFont())
+                new Text(0, 450, 800, 100, "... or press any key", Fonts.get().getSmallFont())
                         .centered()
         );
     }
