@@ -7,10 +7,12 @@ public class TweenSequence<T> implements Animation {
     /**
      * Creates a TweenSequence that remains constant throughout its duration.
      */
-    public static <T> TweenSequence<T> createConstant(double duration, T value) {
-        TweenStep<T> step = new TweenStep<>(duration, value, value, null, null);
-        return new TweenSequence<>(step);
+    public static <T> TweenSequence<T> createConstant(String name, T value) {
+        TweenStep<T> step = new TweenStep<>(0.01, value, value, null, null);
+        return new TweenSequence<>(name, step);
     }
+
+    private String name;
 
     private double totalDuration;
     private ArrayList<TweenStep<T>> steps;
@@ -22,9 +24,10 @@ public class TweenSequence<T> implements Animation {
 
     private ValueListener<T> listener;
 
-    public TweenSequence(TweenStep<T>... steps) {
+    public TweenSequence(String name, TweenStep<T>... steps) {
         if (steps.length < 1) throw new IllegalArgumentException("Must provide at least one tween step!");
 
+        this.name = name;
         this.totalDuration = 0;
         this.steps = new ArrayList<>();
         for (int i = 0; i < steps.length; i++) {
@@ -40,6 +43,10 @@ public class TweenSequence<T> implements Animation {
     private void addStep(TweenStep<T> step) {
         this.steps.add(step);
         this.totalDuration += step.getDuration();
+    }
+
+    public String getName() {
+        return name;
     }
 
     public void setLooping(boolean enabled) {
@@ -118,14 +125,22 @@ public class TweenSequence<T> implements Animation {
     @Override
     public void seek(double time) {
         currentTime = time;
+
+        boolean stepFound = false;
         for (int i = 0; i < steps.size(); i++) {
             TweenStep<T> currentStep = steps.get(i);
             if (time < currentStep.getDuration()) {
                 currentStepIndex = i;
                 currentStep.seek(time);
+                stepFound = true;
+                break;
             } else {
                 time -= currentStep.getDuration();
             }
+        }
+
+        if (!stepFound) {
+            currentStepIndex = steps.size()-1;
         }
     }
 }

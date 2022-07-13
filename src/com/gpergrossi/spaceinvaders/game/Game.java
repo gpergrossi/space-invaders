@@ -1,13 +1,12 @@
 package com.gpergrossi.spaceinvaders.game;
 
 import com.gpergrossi.spaceinvaders.assets.*;
+import com.gpergrossi.spaceinvaders.render.ParticleSystem;
 import com.gpergrossi.spaceinvaders.render.Starfield;
 import com.gpergrossi.spaceinvaders.ui.AnimatedText;
 import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
 import com.gpergrossi.spaceinvaders.entity.*;
-import com.gpergrossi.spaceinvaders.ui.AnimatedTextEffect;
-import com.gpergrossi.spaceinvaders.ui.screens.Screen;
-import com.gpergrossi.spaceinvaders.ui.screens.Screens;
+import com.gpergrossi.spaceinvaders.ui.screens.*;
 
 import java.awt.*;
 import java.awt.geom.Rectangle2D;
@@ -51,6 +50,9 @@ public class Game extends Canvas {
 	/** The state of the game */
 	private GameState state;
 
+	/** Is the game paused? */
+	private boolean paused;
+
 	/** The list of all the entities that exist in our game */
 	private ArrayList<Entity> entities;
 
@@ -69,6 +71,9 @@ public class Game extends Canvas {
 	/** The background star field */
 	private Starfield starfield;
 
+	/** The particle system */
+	private ParticleSystem particleSystem;
+
 
 	/**
 	 * Construct our game and set it running.
@@ -80,12 +85,15 @@ public class Game extends Canvas {
 		this.input = input;
 		this.animationSystem = new AnimationSystem();
 		this.screenStack = new ArrayList<>();
+		this.state = GameState.NONE;
+		this.paused = false;
 
 		this.entities = new ArrayList<>();
 		this.removeList = new ArrayList<>();
 
 		this.alienSwarm = new AlienSwarm();
 		this.starfield = new Starfield(settings.getScreenWidth(), settings.getScreenHeight(), 20, 1000);
+		this.particleSystem = new ParticleSystem(1000, 10);
 	}
 
 	public void setParent(GameWindow window) {
@@ -94,6 +102,10 @@ public class Game extends Canvas {
 
 	public Settings getSettings() {
 		return gameSettings;
+	}
+
+	public ParticleSystem getParticleSystem() {
+		return particleSystem;
 	}
 
 
@@ -115,6 +127,9 @@ public class Game extends Canvas {
 		// Initialize game state variables
 		moveSpeed = 300;
 
+		// Clear the screen stack
+		screenStack.clear();
+
 		// Clear all scoring statistics
 		scoreStatistics.reset();
 
@@ -128,18 +143,35 @@ public class Game extends Canvas {
 		// Clear all animations
 		animationSystem.clear();
 
+		// Clear all particles
+		particleSystem.clear();
+
 		// Create entities
 		initEntities();
 	}
 
 	private void enterState(GameState state) {
+		exitState(this.state);
 		this.state = state;
 
 		switch (state) {
+			case NONE:
+				break;
+
 			case TITLE_SCREEN:
 				reset();
-				screenStack.clear();
-				screenStack.add(Screens.get().getTitleScreen());
+				closeAllScreens();
+
+				final TitleScreen title = Screens.get().getTitleScreen();
+				openScreen(title);
+
+				// The title screen's button should start the game.
+				title.setOnReady(() -> {
+					title.getStartButton().setOnClick(() -> {
+						input.stopWaitKey();
+						enterState(GameState.INTRO_ANIMATION);
+					});
+				});
 
 				// Wait for a key press from the user before beginning.
 				input.waitKey(() -> enterState(GameState.INTRO_ANIMATION));
@@ -153,15 +185,116 @@ public class Game extends Canvas {
 			case GAMEPLAY:
 				break;
 
+			case PAUSED:
+				final PauseScreen pause = Screens.get().getPauseScreen();
+				openScreen(pause);
+
+				// The pause screen's exit button should close the game.
+				pause.setOnReady(() -> {
+					pause.getResumeButton().setOnClick(() -> {
+						resume();
+					});
+
+					pause.getOptionsButton().setOnClick(() -> {
+						final OptionsScreen options = Screens.get().getOptionsScreen();
+						openScreen(options);
+
+						// Hook up the options menu buttons
+						options.setOnReady(() -> {
+							options.getReturnButton().setOnClick(() -> {
+								closeScreen(options);
+							});
+						});
+					});
+
+					pause.getExitButton().setOnClick(() -> {
+						if (gameWindow != null) {
+							gameWindow.close();
+						} else {
+							System.exit(0);
+						}
+					});
+				});
+
+				this.paused = true;
+				break;
+
 			case VICTORY:
-				//message = "Well done! You Win!";
+				closeAllScreens();
+
+				final VictoryScreen victory = Screens.get().getVictoryScreen();
+				openScreen(victory);
+
+				victory.setOnReady(() -> {
+					victory.getPlayAgainButton().setOnClick(() -> {
+						input.stopWaitKey();
+						enterState(GameState.TITLE_SCREEN);
+					});
+				});
+
+				// Wait for a key press from the user before resetting.
 				input.waitKey(() -> enterState(GameState.TITLE_SCREEN));
 				break;
 
 			case DEATH:
-				//message = "Oh no! They got you, try again?";
+				closeAllScreens();
+				openScreen(Screens.get().getDefeatScreen());
+
+				// Wait for a key press from the user before resetting.
 				input.waitKey(() -> enterState(GameState.TITLE_SCREEN));
 				break;
+		}
+	}
+
+	private void exitState(GameState state) {
+		switch (state) {
+			case PAUSED:
+				closeScreen(Screens.get().getPauseScreen());
+				this.paused = false;
+				break;
+
+			default:
+				break;
+		}
+	}
+
+	private void openScreen(Screen screen) {
+		if (screenStack.size() > 0) {
+			// Previous screen should no longer receive input
+			Screen prevScreen = screenStack.get(screenStack.size()-1);
+			prevScreen.unregisterInputListeners(input);
+		}
+
+		this.screenStack.add(screen);
+		screen.reset();
+	}
+
+	private void closeScreen(Screen screen) {
+		this.screenStack.remove(screen);
+		screen.onHide(input, animationSystem);
+
+		if (screenStack.size() > 0) {
+			// If there is a screen below, it should begin receiving inputs again
+			Screen nextScreen = screenStack.get(screenStack.size()-1);
+			nextScreen.registerInputListeners(input);
+		}
+	}
+
+	private void closeAllScreens() {
+		while (screenStack.size() > 0) {
+			closeScreen(screenStack.get(screenStack.size()-1));
+		}
+	}
+
+	public void pause() {
+		if (state == GameState.GAMEPLAY) {
+			enterState(GameState.PAUSED);
+		}
+	}
+
+	public void resume() {
+		if (state == GameState.PAUSED) {
+			enterState(GameState.GAMEPLAY);
 		}
 	}
 
@@ -215,6 +348,7 @@ public class Game extends Canvas {
 	 */
 	public void notifyShotHit(ShotEntity shot) {
 		scoreStatistics.trackShotHit(shot);
+		particleSystem.spawnBulletHit(shot.getX() + 6, shot.getY() - 6);
 	}
 
 	/**
@@ -229,6 +363,10 @@ public class Game extends Canvas {
 			notifyWin();
 		}
 
+		float x = alien.getX() + alien.getWidth() * 0.5f;
+		float y = alien.getY() + alien.getHeight() * 0.5f;
+		particleSystem.spawnDeadAlien(x, y, alien.getVelocityX());
+
 		// If there are still some aliens left then they all need to get faster, so
 		// speed up all the existing aliens
 		alien.getSwarm().increaseSpeed(1.02f);
@@ -239,14 +377,18 @@ public class Game extends Canvas {
 	 * are dead.
 	 */
 	public void notifyWin() {
-		enterState(GameState.VICTORY);
+		if (state == GameState.GAMEPLAY) {
+			enterState(GameState.VICTORY);
+		}
 	}
 
 	/**
 	 * Notification that the player has died. 
 	 */
 	public void notifyDeath() {
-		enterState(GameState.DEATH);
+		if (state == GameState.GAMEPLAY) {
+			enterState(GameState.DEATH);
+		}
 	}
 	
 	/**
@@ -258,7 +400,7 @@ public class Game extends Canvas {
 		// Check that we been have waiting long enough to fire
 		if (ship.canShoot()) {
 			// If we waited long enough, create the shot entity, and record the time.
-			ShotEntity shot = new ShotEntity(this, Sprites.get().getShotSprite(), ship.getX()+10, ship.getY()-30);
+			ShotEntity shot = new ShotEntity(this, Sprites.get().getShotSprite(), ship.getX()+10, ship.getY()-20);
 			entities.add(shot);
 
 			ship.resetShotTimer();
@@ -282,8 +424,16 @@ public class Game extends Canvas {
 		// Allows the input system's wait key callback to run synchronously with the main thread.
 		input.checkCallbacks();
 
+		// Update callbacks for the screen that has focus (top of stack)
+		if (screenStack.size() > 0) {
+			Screen top = screenStack.get(screenStack.size() - 1);
+			if (top != null) {
+				top.doCallbacks();
+			}
+		}
+
 		// Update all entities
-		if (state == GameState.GAMEPLAY) {
+		if (state == GameState.GAMEPLAY || state == GameState.VICTORY || state == GameState.DEATH) {
 			for (int i = 0; i < entities.size(); i++) {
 				Entity entity = (Entity) entities.get(i);
 				entity.updateLogic(deltaMs);
@@ -293,8 +443,39 @@ public class Game extends Canvas {
 			// Update the alien swarm
 			alienSwarm.update();
 
+			// Update particles
+			particleSystem.update(deltaMs);
+
 			// Do collision checks
 			doCollisions();
+
+		} else if (state == GameState.PAUSED) {
+
+			for (int i = 0; i < entities.size(); i++) {
+				Entity entity = (Entity) entities.get(i);
+				entity.updateAnimation(deltaMs);
+			}
+
+			// Update particles
+			particleSystem.update(deltaMs);
+
+		}
+
+		if (state == GameState.GAMEPLAY) {
+			// resolve the movement of the ship. First assume the ship
+			// isn't moving. If either cursor key is pressed then
+			// update the movement appropriately
+			ship.setVelocityX(0);
+			if (input.isLeftPressed() && !input.isRightPressed()) {
+				ship.setVelocityX(-moveSpeed);
+			} else if (input.isRightPressed() && !input.isLeftPressed()) {
+				ship.setVelocityX(moveSpeed);
+			}
+
+			// if we're pressing fire, attempt to fire
+			if (input.isFirePressed()) {
+				tryToFire();
+			}
 		}
 
 		// Remove any entity that has been marked for clean up
@@ -307,20 +488,14 @@ public class Game extends Canvas {
 		// Update star field twinkle
 		starfield.update(deltaMs);
 
-		// resolve the movement of the ship. First assume the ship
-		// isn't moving. If either cursor key is pressed then
-		// update the movement appropriately
-		ship.setVelocityX(0);
-
-		if (input.isLeftPressed() && !input.isRightPressed()) {
-			ship.setVelocityX(-moveSpeed);
-		} else if (input.isRightPressed() && !input.isLeftPressed()) {
-			ship.setVelocityX(moveSpeed);
+		// if escape is pressed, pause/unpause the game
+		if (input.wasEscapePressed()) {
+			if (!paused) pause();
+			else resume();
 		}
 
-		// if we're pressing fire, attempt to fire
-		if (input.isFirePressed()) {
-			tryToFire();
+		if (input.wasEnterPressed() && state == GameState.GAMEPLAY) {
+			enterState(GameState.VICTORY);
 		}
 	}
 
@@ -363,6 +538,7 @@ public class Game extends Canvas {
 	 * <p>
 	 */
 	public void render(Graphics2D g) {
+		// Render star field
 		starfield.render(g);
 
 		// cycle round drawing all the entities we have in the game
@@ -370,6 +546,9 @@ public class Game extends Canvas {
 			Entity entity = (Entity) entities.get(i);
 			entity.render(g);
 		}
+
+		// Render particles
+		particleSystem.render(g);
 
 		// Render all visible screens
 		if (screenStack.size() > 0) {
@@ -381,54 +560,27 @@ public class Game extends Canvas {
 				}
 			}
 			for (int i = firstVisibleScreenIndex; i < screenStack.size(); i++) {
-				screenStack.get(i).render(g);
+				Screen screen = screenStack.get(i);
+				if (!screen.isReady()) {
+					screen.onShow(g, input, animationSystem);
+				}
+				screen.render(g);
 			}
 		}
-
-		/*
-		// if we're waiting for an "any key" press then draw the
-		// current message
-		if (input.isWaitingForKeyPress()) {
-			g.setColor(Color.white);
-
-			Font[] lineFont = new Font[] { Fonts.get().getLargeFont(), Fonts.get().getMediumFont() };
-			String[] lines = new String[] { message, "Press any key" };
-			int[] lineYs = new int[] { 250, 300 };
-
-			for (int i = 0; i < 2; i++) {
-				g.setFont(lineFont[i]);
-
-				if (textLines[i] == null || !textLines[i].getText().equals(lines[i])) {
-					if (textLines[i] != null) {
-						textLines[i].unregisterAnimations(animationSystem);
-					}
-
-					String text = lines[i];
-					FontMetrics fm = g.getFontMetrics();
-					int strWidth = fm.stringWidth(text);
-					int strHeight = fm.getHeight();
-					int strAscent = fm.getAscent();
-					textLines[i] = new AnimatedText(400 - strWidth / 2, lineYs[i] - strAscent, strWidth, strHeight, text, g.getFont(), g, AnimatedTextEffect.DEFAULT);
-					textLines[i].registerAnimations(animationSystem);
-				}
-				if (textLines[i] != null) {
-					textLines[i].render(g);
-				}
-			}
-		}
-		*/
 
 		// Render statistics
-		g.setFont(Fonts.get().getSmallFont());
-		g.setColor(Color.white);
-		g.drawString("Fired:", 650, 25);
-		g.drawString("Hit:", 650, 45);
-		g.drawString("Accuracy:", 650, 65);
-		g.drawString("Combo:", 650, 85);
-		g.drawString("" + scoreStatistics.getShotsFired(), 750, 26);
-		g.drawString("" + scoreStatistics.getShotsHit(), 750, 46);
-		g.drawString("" + Math.round(scoreStatistics.getAccuracy() * 100f) + "%", 750, 66);
-		g.drawString("" + scoreStatistics.getHitCombo(), 750, 86);
+		if (state == GameState.GAMEPLAY || state == GameState.PAUSED) {
+			g.setFont(Fonts.get().getSmallFont());
+			g.setColor(Color.white);
+			g.drawString("Fired:", 650, 25);
+			g.drawString("Hit:", 650, 45);
+			g.drawString("Accuracy:", 650, 65);
+			g.drawString("Combo:", 650, 85);
+			g.drawString("" + scoreStatistics.getShotsFired(), 750, 26);
+			g.drawString("" + scoreStatistics.getShotsHit(), 750, 46);
+			g.drawString("" + Math.round(scoreStatistics.getAccuracy() * 100f) + "%", 750, 66);
+			g.drawString("" + scoreStatistics.getHitCombo(), 750, 86);
+		}
 
 		// Render FPS counter
 		if (gameWindow != null) {

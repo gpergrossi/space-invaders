@@ -20,6 +20,9 @@ public class Button extends Component {
 
     private boolean hover;
     private boolean pressed;
+    private boolean doOnClick;
+
+    private Runnable onClickCallback;
 
     private MouseListener mouseListener;
     private MouseMotionListener mouseMotionListener;
@@ -34,6 +37,9 @@ public class Button extends Component {
 
         this.hover = false;
         this.pressed = false;
+        this.doOnClick = false;
+
+        this.onClickCallback = null;
 
         this.mouseListener = createMouseListener();
         this.mouseMotionListener = createMouseMotionListener();
@@ -49,6 +55,11 @@ public class Button extends Component {
     public void unregisterInputListeners(Input input) {
         input.removeMouseListener(mouseListener);
         input.removeMouseMotionListener(mouseMotionListener);
+
+        // Should also reset button state
+        this.hover = false;
+        this.pressed = false;
+        this.doOnClick = false;
     }
 
     @Override
@@ -87,11 +98,27 @@ public class Button extends Component {
         // Draw text
         g.setFont(font);
         int strWidth = g.getFontMetrics().stringWidth(text);
+        int strHeight = g.getFontMetrics().getHeight();
         int ascent = g.getFontMetrics().getAscent();
-        g.drawString(text, x + (width - strWidth) * 0.5f, y + ascent);
+        g.drawString(text, x + (width - strWidth) * 0.5f, y + (height - strHeight) * 0.5f + ascent - 1);
 
         // Draw outline
         g.drawRoundRect(x, y, width, height, 3, 3);
+    }
+
+    public void setOnClick(Runnable callback) {
+        this.onClickCallback = callback;
+    }
+
+    @Override
+    public void doCallbacks() {
+        super.doCallbacks();
+        if (doOnClick) {
+            doOnClick = false;
+            if (onClickCallback != null) {
+                onClickCallback.run();
+            }
+        }
     }
 
     private MouseListener createMouseListener() {
@@ -105,7 +132,12 @@ public class Button extends Component {
 
             @Override
             public void mouseReleased(MouseEvent e) {
-                pressed = false;
+                if (pressed) {
+                    pressed = false;
+                    if (e.getX() >= x && e.getX() < x + width && e.getY() >= y && e.getY() < y + height) {
+                        doOnClick = true;
+                    }
+                }
             }
         };
     };
@@ -113,11 +145,7 @@ public class Button extends Component {
     private MouseMotionListener createMouseMotionListener() {
         return new MouseAdapter() {
             @Override
-            public void mouseDragged(MouseEvent e) {
-                if (e.getX() < x || e.getX() >= x+width && e.getY() < y && e.getY() >= y+height) {
-                    pressed = false;
-                }
-            }
+            public void mouseDragged(MouseEvent e) { }
 
             @Override
             public void mouseMoved(MouseEvent e) {

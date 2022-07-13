@@ -2,8 +2,8 @@ package com.gpergrossi.spaceinvaders.ui;
 
 import com.gpergrossi.spaceinvaders.animation.AnimationSystem;
 import com.gpergrossi.spaceinvaders.animation.TweenSequence;
-import com.gpergrossi.spaceinvaders.animation.TweenStep;
 import com.gpergrossi.spaceinvaders.game.Input;
+import com.gpergrossi.spaceinvaders.ui.texteffects.AnimatedTextEffect;
 
 import java.awt.*;
 import java.awt.geom.AffineTransform;
@@ -13,9 +13,9 @@ import java.util.ArrayList;
 
 public class AnimatedText extends Text {
 
-    private static ArrayList<AnimatedTextCharacter> createCharacters(Graphics2D g, String text, double centerX, double centerY, AnimatedTextEffect effect) {
+    private static ArrayList<AnimatedTextCharacter> createCharacters(Graphics2D g, Font font, String text, double centerX, double centerY, AnimatedTextEffect effect) {
         // Get bounds of text string
-        FontMetrics fm = g.getFontMetrics();
+        FontMetrics fm = g.getFontMetrics(font);
         Rectangle2D bounds = fm.getStringBounds(text, 0, text.length(), g);
         double width = bounds.getWidth();
         double height = bounds.getHeight();
@@ -42,11 +42,13 @@ public class AnimatedText extends Text {
 
 
     private ArrayList<AnimatedTextCharacter> chars;
+    private Font font;
 
     public AnimatedText(int x, int y, int width, int height, String text, Font font, Graphics2D graphics, AnimatedTextEffect effect) {
         super(x, y, width, height, text, font);
 
-        this.chars = createCharacters(graphics, text, x + width/2, y + height/2, effect);
+        this.chars = createCharacters(graphics, font, text, x + width/2, y + height/2, effect);
+        this.font = font;
     }
 
     @Override
@@ -64,21 +66,29 @@ public class AnimatedText extends Text {
     @Override
     public void registerAnimations(AnimationSystem animationSystem) {
         super.registerAnimations(animationSystem);
+
+        int count = 0;
         for (AnimatedTextCharacter c : chars) {
-            c.registerAnimations(animationSystem);
+            count += c.registerAnimations(animationSystem);
         }
+        System.out.println("Registered " + count + " animations for AnimatedText(\"" + text + "\")");
     }
 
     @Override
     public void unregisterAnimations(AnimationSystem animationSystem) {
         super.unregisterAnimations(animationSystem);
+
+        int count = 0;
         for (AnimatedTextCharacter c : chars) {
-            c.unregisterAnimations(animationSystem);
+            count += c.unregisterAnimations(animationSystem);
         }
+        System.out.println("Unregistered " + count + " animations for AnimatedText(\"" + text + "\")");
     }
 
     @Override
     public void render(Graphics2D g) {
+        g.setFont(font);
+
         for (int i = chars.size()-1; i >= 0; i--) {
             AnimatedTextCharacter c = chars.get(i);
             c.render(g);
@@ -114,7 +124,7 @@ public class AnimatedText extends Text {
             this.animations = effect.getAnimations(fullText, index);
         }
 
-        private void render(Graphics2D g) {
+        private void render(Graphics2D gr) {
 
             // Lookup animation values
             Point2D.Double vectorZero = new Point2D.Double(0, 0);
@@ -145,40 +155,51 @@ public class AnimatedText extends Text {
             AffineTransform transform = new AffineTransform();
             transform.concatenate(translate);
             transform.concatenate(rotate);
+            transform.concatenate(localTranslate);
             transform.concatenate(scale);
             transform.concatenate(shear);
-            transform.concatenate(localTranslate);
             transform.concatenate(localRotate);
-            g.setTransform(transform);
+            gr.setTransform(transform);
 
             // Create color
             int rgb = Color.HSBtoRGB(hue, sat, bri);
-            int a = (int) (255 * Math.min(Math.max(alpha, 0f), 1f));
-            Color color = new Color(a << 24 | rgb);
-            g.setColor(color);
+            int r = (rgb >> 16) & 0xFF;
+            int g = (rgb >> 8) & 0xFF;
+            int b = (rgb >> 0) & 0xFF;
+            int a = (int) (255.0 * Math.min(Math.max(alpha, 0f), 1f)) & 0xFF;
+            Color color = new Color(r, g, b, a);
+            gr.setColor(color);
 
             // Draw the character
-            g.drawString(""+c, 0f, 0f);
+            gr.drawString(""+c, 0f, 0f);
         }
 
         private static <T> T getWithDefault(TweenSequence<T> seq, T defaultValue) {
             return (seq == null) ? defaultValue : seq.getValue();
         }
 
-        private void registerAnimations(AnimationSystem animationSystem) {
+        private int registerAnimations(AnimationSystem animationSystem) {
+            int count = 0;
             for (TweenSequence seq : animations.getAll()) {
                 if (seq != null) {
-                    animationSystem.start(seq, seq.isLooping(), seq.getDefaultStartTime(), null);
+                    boolean success = animationSystem.start(seq, seq.getDefaultStartTime(), seq.isLooping(), null);
+                    if (success) count++;
                 }
             }
+            return count;
         }
 
-        private void unregisterAnimations(AnimationSystem animationSystem) {
+        private int unregisterAnimations(AnimationSystem animationSystem) {
+            int count = 0;
             for (TweenSequence seq : animations.getAll()) {
                 if (seq != null) {
+                    seq.finish();
                     animationSystem.remove(seq);
+                    boolean success = animationSystem.remove(seq);
+                    if (success) count++;
                 }
             }
+            return count;
         }
     }
 }

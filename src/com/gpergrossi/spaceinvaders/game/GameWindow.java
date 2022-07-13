@@ -25,6 +25,9 @@ public class GameWindow extends Canvas {
     /** True if the game is open and should still be running, false if not and the window should close. */
     private boolean running;
 
+    /** The window that contains the game */
+    private JFrame window;
+
     /** The game object that handles the core game loop and behaviors */
     private Game game;
 
@@ -56,10 +59,10 @@ public class GameWindow extends Canvas {
         this.input = input;
 
         // create a frame to contain our game
-        JFrame container = new JFrame(title);
+        window = new JFrame(title);
 
         // get hold the content of the frame and set up the resolution of the game
-        JPanel panel = (JPanel) container.getContentPane();
+        JPanel panel = (JPanel) window.getContentPane();
         panel.setPreferredSize(new Dimension(width,height));
         panel.setLayout(null);
 
@@ -72,13 +75,13 @@ public class GameWindow extends Canvas {
         setIgnoreRepaint(true);
 
         // finally make the window visible
-        container.pack();
-        container.setResizable(false);
-        container.setVisible(true);
+        window.pack();
+        window.setResizable(false);
+        window.setVisible(true);
 
         // add a listener to respond to the user closing the window. If they
         // do we'd like to exit the game
-        container.addWindowListener(new WindowAdapter() {
+        window.addWindowListener(new WindowAdapter() {
             public void windowClosing(WindowEvent e) {
                 System.exit(0);
             }
@@ -168,6 +171,9 @@ public class GameWindow extends Canvas {
                 }
             }
         }
+
+        window.dispose();
+        System.exit(0);
     }
 
     public void close() {

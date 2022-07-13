@@ -17,4 +17,6 @@ public abstract class Component {
 
     public abstract void render(Graphics2D g);
 
+    public void doCallbacks() {}
+
 }

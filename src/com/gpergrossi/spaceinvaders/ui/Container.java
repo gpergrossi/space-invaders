@@ -57,4 +57,10 @@ public class Container extends Component {
         }
     }
 
+    @Override
+    public void doCallbacks() {
+        for (Component c : components) {
+            c.doCallbacks();
+        }
+    }
 }

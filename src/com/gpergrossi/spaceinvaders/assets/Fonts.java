@@ -29,9 +29,9 @@ public class Fonts {
     public void load() {
         AssetStore assets = AssetStore.get();
         hugeFont = assets.getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 120.0f);
-        largeFont = assets.getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 36.0f);
+        largeFont = assets.getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 64.0f);
         mediumFont = assets.getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 30.0f);
-        smallFont = assets.getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 24.0f);
+        smallFont = assets.getFont("font/SquadaOne-Regular.ttf", Font.PLAIN, 20.0f);
     }
 
     public Font getHugeFont() {

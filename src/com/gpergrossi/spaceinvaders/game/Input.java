@@ -47,6 +47,18 @@ public class Input {
     /** True if we are firing */
     private boolean firePressed;
 
+    /** True if the escape key is currently pressed */
+    private boolean escapePressed;
+
+    /** True if the escape key is currently locked, meaning it won't register again until it is released */
+    private boolean escapeLocked;
+
+    /** True if the enter key is currently pressed */
+    private boolean enterPressed;
+
+    /** True if the enter key is currently locked, meaning it won't register again until it is released */
+    private boolean enterLocked;
+
 
     public Input() {
         keyListeners = new ArrayList<>();
@@ -64,6 +76,9 @@ public class Input {
         leftPressed = false;
         rightPressed = false;
         firePressed = false;
+        escapePressed = false;
+        enterPressed = false;
+        enterLocked = false;
     }
 
     /** Tells the input system to ignore all input until a key is typed. */
@@ -87,6 +102,14 @@ public class Input {
         waitKeyCallback = callback;
     }
 
+    /**
+     * Stops the wait key without processing its callback.
+     */
+    public void stopWaitKey() {
+        this.waitingForKeyPress = false;
+        this.waitKeyCallback = null;
+        this.waitKeyCleared = false;
+    }
 
     public boolean isLeftPressed() {
         return leftPressed;
@@ -98,6 +121,20 @@ public class Input {
 
     public boolean isFirePressed() {
         return firePressed;
+    }
+
+    public boolean wasEscapePressed() {
+        if (!escapePressed) return false;
+        if (escapeLocked) return false;
+        escapeLocked = true;
+        return true;
+    }
+
+    public boolean wasEnterPressed() {
+        if (!enterPressed) return false;
+        if (enterLocked) return false;
+        enterLocked = true;
+        return true;
     }
 
     public boolean isWaitingForKeyPress() {
@@ -114,12 +151,14 @@ public class Input {
 
                     if (e.getKeyCode() == KeyEvent.VK_LEFT) {
                         leftPressed = true;
-                    }
-                    if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
                         rightPressed = true;
-                    }
-                    if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                         firePressed = true;
+                    } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                        escapePressed = true;
+                    } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        enterPressed = true;
                     }
 
                     // This needs to be thread-safe in case an event comes through
@@ -141,12 +180,16 @@ public class Input {
 
                     if (e.getKeyCode() == KeyEvent.VK_LEFT) {
                         leftPressed = false;
-                    }
-                    if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
+                    } else if (e.getKeyCode() == KeyEvent.VK_RIGHT) {
                         rightPressed = false;
-                    }
-                    if (e.getKeyCode() == KeyEvent.VK_SPACE) {
+                    } else if (e.getKeyCode() == KeyEvent.VK_SPACE) {
                         firePressed = false;
+                    } else if (e.getKeyCode() == KeyEvent.VK_ESCAPE) {
+                        escapePressed = false;
+                        escapeLocked = false;
+                    } else if (e.getKeyCode() == KeyEvent.VK_ENTER) {
+                        enterPressed = false;
+                        enterLocked = false;
                     }
 
                     // This needs to be thread-safe in case an event comes through
@@ -172,11 +215,6 @@ public class Input {
                     waitKeyCleared = true;
 
                 } else {
-                    // if we hit escape, then quit the game
-                    if (e.getKeyChar() == 27) {
-                        System.exit(0);
-                    }
-
                     // This needs to be thread-safe in case an event comes through
                     // while the main thread is adding/removing listeners.
                     synchronized(this) {

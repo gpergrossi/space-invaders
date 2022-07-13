@@ -1,10 +1,8 @@
-package com.gpergrossi.spaceinvaders.ui;
+package com.gpergrossi.spaceinvaders.ui.texteffects;
 
-import com.gpergrossi.spaceinvaders.animation.Animation;
 import com.gpergrossi.spaceinvaders.animation.TweenSequence;
 
 import java.awt.geom.Point2D;
-import java.util.ArrayList;
 
 public abstract class AnimatedTextEffect {
 

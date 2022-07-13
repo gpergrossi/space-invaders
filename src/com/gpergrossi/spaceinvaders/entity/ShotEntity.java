@@ -2,6 +2,9 @@ package com.gpergrossi.spaceinvaders.entity;
 
 import com.gpergrossi.spaceinvaders.game.Game;
 import com.gpergrossi.spaceinvaders.assets.Sprite;
+import com.gpergrossi.spaceinvaders.render.Renderer;
+import com.gpergrossi.spaceinvaders.render.ShotEntityRenderer;
+import com.gpergrossi.spaceinvaders.render.SpriteEntityRenderer;
 
 /**
  * An entity representing a shot fired by the player's ship
@@ -15,6 +18,12 @@ public class ShotEntity extends SpriteEntity {
 
 	/** True if this shot has been "used", i.e. its hit something */
 	private boolean used;
+
+	/** The size of the shot will change over time */
+	private float size;
+
+	private float particleInterval;
+	private float particleTimeRemaining;
 	
 	/**
 	 * Create a new shot from the player
@@ -29,12 +38,17 @@ public class ShotEntity extends SpriteEntity {
 		
 		dy = moveSpeed;
 		used = false;
+		size = 0.75f;
+
+		particleInterval = 0.01f;
+		particleTimeRemaining = particleInterval;
 	}
 
 	/**
-	 * Request that this shot moved based on time elapsed
-	 * 
-	 * @param delta The time that has elapsed since last move
+	 * Process any logical updates associated with this entity.
+	 * This method will not be called while the game is paused.
+	 *
+	 * @param delta The amount of time that has passed in milliseconds
 	 */
 	@Override
 	public void updateLogic(long delta) {
@@ -49,14 +63,28 @@ public class ShotEntity extends SpriteEntity {
 	}
 
 	/**
-	 * Do the logic associated with updating this entity.
-	 * This method will be called once per frame.
+	 * Process any updates associated with this entity's visual animation only.
+	 * This method is called even when the game is paused.
 	 *
 	 * @param delta The amount of time that has passed in milliseconds
 	 */
 	@Override
 	public void updateAnimation(long delta) {
-		// Physics entities will process no animation updates by default.
+		float timeStep = delta / 1000.0f;
+
+		this.size += timeStep * 0.5;
+		if (this.size > 1.1f) this.size = 1.1f;
+
+		particleTimeRemaining -= timeStep;
+		if (particleTimeRemaining <= 0f) {
+			game.getParticleSystem().spawnBulletTrail(x + 5.5f, y + 5.5f);
+			particleTimeRemaining += particleInterval;
+		}
+	}
+
+	@Override
+	public Renderer getRenderer() {
+		return ShotEntityRenderer.get();
 	}
 
 	/**
@@ -85,5 +113,9 @@ public class ShotEntity extends SpriteEntity {
 
 			used = true;
 		}
+	}
+
+	public float getSize() {
+		return size;
 	}
 }

@@ -29,6 +29,7 @@ public class AnimationSystem {
                 // Update the animation
                 if (timeStep < animation.getTimeRemaining()) {
                     animation.update(timeStep);
+
                 } else {
                     double remaining = animation.getTimeRemaining();
                     animation.update(remaining);
@@ -49,18 +50,21 @@ public class AnimationSystem {
                         status.onLoop();
 
                         // Move forward to correct position to maintain smooth looping
-                        animation.update(position + remainingStep);
+                        double seekTo = position + remainingStep;
+                        seekTo -= Math.floor(seekTo / animation.getDuration()) * animation.getDuration();
+                        animation.update(seekTo);
 
                     } else {
-                        // Pause playback
-                        status.pause();
-
                         // Seek to end of animation so onComplete sees consistent position
                         animation.finish();
+
+                        // Pause playback
+                        status.pause();
 
                         // Call onComplete handlers
                         status.onComplete();
 
+                        // Remove this animation from the system
                         removeList.add(animation);
                     }
                 }
@@ -72,6 +76,29 @@ public class AnimationSystem {
             animations.remove(animation);
         }
         removeList.clear();
+
+        //printDebug();
+    }
+
+    private void printDebug() {
+        System.out.println("Number of animations running: " + animations.size());
+        for (Map.Entry<Animation, AnimationStatus> entry : animations.entrySet()) {
+            Animation animation = entry.getKey();
+            AnimationStatus status = entry.getValue();
+
+            String name = "<anon>";
+
+            if (animation instanceof TweenSequence) {
+                TweenSequence ts = (TweenSequence) animation;
+                name = ts.getName();
+            }
+
+            System.out.println("   " + name + " ("
+                    + animation.getCurrentTime() + "/" + animation.getDuration()
+                    + ", " + (status.isPaused() ? "paused" : "running")
+                    + ", " + (status.isLooping() ? "looping" : "not looping")
+                    + ")");
+        }
     }
 
     private AnimationStatus getStatus(Animation animation, boolean create) {
@@ -87,20 +114,24 @@ public class AnimationSystem {
         }
     }
 
-    public void start(Animation animation) {
-        this.start(animation, false, 0, null);
+    public boolean start(Animation animation) {
+        return this.start(animation, 0, false, null);
     }
 
-    public void start(Animation animation, boolean looping, double startTime, AnimationListener listener) {
+    public boolean start(Animation animation, double startTime, boolean looping, AnimationListener listener) {
         AnimationStatus status = getStatus(animation, true);
         animation.seek(startTime);
+        if (listener != null) { status.setListener(listener); }
         status.setLooping(looping);
-        if (listener != null) { status.addListener(listener); }
         status.play();
+        return true;
     }
 
-    public void remove(Animation animation) {
+    public boolean remove(Animation animation) {
+        if (!animations.containsKey(animation)) return false;
+
         removeList.add(animation);
+        return true;
     }
 
     public void pause(Animation animation) {
@@ -125,13 +156,6 @@ public class AnimationSystem {
     public boolean isLooping(Animation animation) {
         AnimationStatus status = getStatus(animation, false);
         return (status != null) && status.isLooping();
-    }
-
-    public void addListener(Animation animation, AnimationListener listener) {
-        AnimationStatus status = getStatus(animation, false);
-        if (status != null) {
-            status.addListener(listener);
-        }
     }
 
     public void finish(Animation animation) {
@@ -184,13 +208,13 @@ public class AnimationSystem {
         private boolean looping;
         private double speed;
 
-        private ArrayList<AnimationListener> listeners;
+        private AnimationListener listener;
 
         public AnimationStatus() {
             this.paused = true;
             this.looping = false;
             this.speed = 1.0f;
-            this.listeners = new ArrayList<>();
+            this.listener = null;
         }
 
         public boolean isPaused() {
@@ -221,20 +245,20 @@ public class AnimationSystem {
             this.speed = speed;
         }
 
-        public void addListener(AnimationListener listener) {
-            this.listeners.add(listener);
+        public void setListener(AnimationListener listener) {
+            this.listener = listener;
         }
 
         /** Tell all listeners that the animation is complete */
         private void onComplete() {
-            for (AnimationListener listener : listeners) {
+            if (listener != null) {
                 listener.onAnimationComplete();
             }
         }
 
         /** Tell all listeners that the animation has completed a loop */
         private void onLoop() {
-            for (AnimationListener listener : listeners) {
+            if (listener != null) {
                 listener.onLoop();
             }
         }
